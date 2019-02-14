@@ -71,6 +71,7 @@ public class UnoPlayingField implements Serializable {
 	public UnoPlayingField(Player clientPlayer, InetAddress hostIP) throws UnknownHostException, IOException, ClassNotFoundException, InterruptedException {
 		this.setPlayer(clientPlayer);
 		this.host = hostIP;
+		System.out.println(hostIP.toString());
 		this.propertyChangeSupport = new PropertyChangeSupport(this);
 		
 		this.isClient=true;
@@ -632,6 +633,7 @@ public class UnoPlayingField implements Serializable {
 		cardList.add(new UnoCard(UnoCard.COLOR_BLUE, UnoCard.CARD_ZERO));
 		cardList.add(new UnoCard(UnoCard.COLOR_GREEN, UnoCard.CARD_ZERO));
 		cardList.add(new UnoCard(UnoCard.COLOR_YELLOW, UnoCard.CARD_ZERO));
+		
 		// Pairs of two, each color
 		for(int color = 0; color <= 3; color++) {
 			for(int cardid = 1; cardid < 12; cardid++) {
@@ -658,6 +660,7 @@ public class UnoPlayingField implements Serializable {
 		cardList.add(new UnoCard(UnoCard.COLOR_YELLOW, UnoCard.CARD_DRAW_TWO));
 			
 		// Wild cards
+		/* temp disabled since they dont work
 		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
 		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
 		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
@@ -668,7 +671,7 @@ public class UnoPlayingField implements Serializable {
 		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
 		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
 		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
-		
+		*/
 		Collections.shuffle(cardList);
 		return cardList;
 	}

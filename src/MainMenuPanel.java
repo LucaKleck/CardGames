@@ -25,7 +25,7 @@ public class MainMenuPanel extends JPanel {
 		add(lblUserName, "flowy,cell 0 0");
 		
 		JTextField txtUsername = new JTextField();
-		txtUsername.setText("User"+r.nextInt());
+		txtUsername.setText("User"+r.nextInt(Integer.MAX_VALUE));
 		add(txtUsername, "cell 0 0,alignx left,aligny center");
 		txtUsername.setColumns(10);
 		
@@ -42,6 +42,7 @@ public class MainMenuPanel extends JPanel {
 				container.remove(this);
 				container.revalidate();
 			} catch (UnknownHostException e1) {
+				e1.printStackTrace();
 			}
 		});
 		add(btnStartAsHost, "cell 0 3,alignx left,aligny top");
@@ -53,6 +54,7 @@ public class MainMenuPanel extends JPanel {
 				container.remove(this);
 				container.revalidate();
 			} catch (UnknownHostException e1) {
+				e1.printStackTrace();
 			}
 		});
 		add(btnJoinAsClient, "cell 2 3,alignx left,aligny top");

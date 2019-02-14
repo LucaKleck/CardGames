@@ -23,7 +23,10 @@ public class CardFieldPanel extends JScrollPane {
 		viewport.add(graphicUnoCard, "cell 0 0,alignx center,aligny top");
 		
 		for(int i = 0; i < unoSpielfeld.getplacedUnoCards().size(); i++) {
-			viewport.add(new GraphicUnoCard(unoSpielfeld.getplacedUnoCards().get(i)), "cell "+(unoSpielfeld.getplacedUnoCards().size()-i-1)+" 1");
+			try {
+				viewport.add(new GraphicUnoCard(unoSpielfeld.getplacedUnoCards().get(i)), "cell "+(unoSpielfeld.getplacedUnoCards().size()-i-1)+" 1");
+			} catch (NullPointerException e) {
+			}
 		}		
 	}
 
