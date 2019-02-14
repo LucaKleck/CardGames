@@ -9,10 +9,12 @@ public class PlayerCardListener implements MouseListener {
 	private Boolean selectedCardFlag = false;
 	private UnoCard unoCard;
 	private PlayerHand playerHand;
+	private PlayerPanel playerPanel;
 	private UnoPlayingField unoSpielfeld;
 
-	public PlayerCardListener(UnoCard unoCard, PlayerHand playerHand, UnoPlayingField unoSpielfeld, PlayerCardChangeListener cl) {
+	public PlayerCardListener(UnoCard unoCard, PlayerHand playerHand, UnoPlayingField unoSpielfeld, PlayerCardChangeListener cl, PlayerPanel playerPanel) {
 		this.propertyChangeSupport = new PropertyChangeSupport(this);
+		this.playerPanel = playerPanel;
 		this.unoCard = unoCard;
 		this.playerHand = playerHand;
 		this.unoSpielfeld = unoSpielfeld;
@@ -29,6 +31,8 @@ public class PlayerCardListener implements MouseListener {
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		if(playerPanel.isDisabledCards()) return;
+		
 		playerHand.setSelectedCard(unoCard, unoSpielfeld);
 		
 		Boolean oldSelectedCardFlag = selectedCardFlag;

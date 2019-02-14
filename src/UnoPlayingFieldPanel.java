@@ -2,6 +2,7 @@ import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.JButton;
@@ -33,7 +34,8 @@ public class UnoPlayingFieldPanel extends JPanel {
 		validate();
 	}); 
 	private JLabel lblColorInfo;
-	public UnoPlayingFieldPanel(Player clientPlayer, boolean isClient) {
+	private JPanel colorPanel;
+	public UnoPlayingFieldPanel(Player clientPlayer, boolean isClient, InetAddress hostIP) {
 		if(!isClient) {
 			try {
 				this.unoPlayingField = new UnoPlayingField(clientPlayer);
@@ -43,7 +45,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 			}
 		} else {
 			try {
-				this.unoPlayingField = new UnoPlayingField(clientPlayer, true);
+				this.unoPlayingField = new UnoPlayingField(clientPlayer, hostIP);
 			} catch (ClassNotFoundException | IOException | InterruptedException e1) {
 				e1.printStackTrace();
 				System.exit(0);
@@ -57,13 +59,15 @@ public class UnoPlayingFieldPanel extends JPanel {
 		textPaneInfo = new JTextPane();
 		updateText();
 		textPaneInfo.setEditable(false);
-		add(textPaneInfo, "cell 1 0,grow");
+		add(textPaneInfo, "flowy,cell 1 0,grow");
 		
-		JPanel colorPanel = new JPanel();
+		colorPanel = new JPanel();
+		colorPanel.setVisible(false);
 		add(colorPanel, "cell 1 1,grow");
-		colorPanel.setLayout(new MigLayout("", "[][fill]", "[top][top][]"));
+		colorPanel.setLayout(new MigLayout("", "[50%,fill][50%,fill]", "[33%][33%][33%]"));
 		
 		btnRed = new JButton("Red");
+		colorPanel.add(btnRed, "cell 0 0,grow");
 		btnRed.setBackground(Color.RED);
 		btnRed.addActionListener(e -> {
 			
@@ -73,9 +77,9 @@ public class UnoPlayingFieldPanel extends JPanel {
 				color.set(-1);
 			}
 		});
-		colorPanel.add(btnRed, "flowx,cell 0 0 2 1,grow");
 		
 		btnBlue = new JButton("Blue");
+		colorPanel.add(btnBlue, "cell 1 0,grow");
 		btnBlue.setBackground(Color.BLUE);
 		btnBlue.addActionListener(e -> {
 			
@@ -85,9 +89,9 @@ public class UnoPlayingFieldPanel extends JPanel {
 				color.set(-1);
 			}
 		});
-		colorPanel.add(btnBlue, "cell 0 0 2 1,grow");
 		
 		btnGreen = new JButton("Green");
+		colorPanel.add(btnGreen, "flowx,cell 0 1,grow");
 		btnGreen.setBackground(Color.GREEN);
 		btnGreen.addActionListener(e -> {
 			
@@ -97,7 +101,6 @@ public class UnoPlayingFieldPanel extends JPanel {
 				color.set(-1);
 			}
 		});
-		colorPanel.add(btnGreen, "flowx,cell 0 1 2 1,grow");
 		
 		btnYellow = new JButton("Yellow");
 		btnYellow.setBackground(Color.YELLOW);
@@ -109,10 +112,10 @@ public class UnoPlayingFieldPanel extends JPanel {
 				color.set(-1);
 			}
 		});
-		colorPanel.add(btnYellow, "cell 0 1 2 1,grow");
+		colorPanel.add(btnYellow, "cell 1 1,grow");
 		
-		lblColorInfo = new JLabel("No Wildcard / Draw 4 Selected");
-		colorPanel.add(lblColorInfo, "cell 1 2");
+		lblColorInfo = new JLabel("Select Color!");
+		colorPanel.add(lblColorInfo, "cell 0 2 2 1,alignx center,aligny center");
 		
 		
 		
@@ -132,7 +135,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 		btnDrawCard = new JButton("Draw Card");
 		add(btnDrawCard, "cell 1 3");
 		/*
-		 * Creates Runnable that will be run on button press </br>
+		 * Creates Runnable that will be run on button press
 		 * plays currently selected card and if it's a wild/+4 card waits until the player selected a color
 		 */
 		btnPlaySelectedCard.addActionListener(e -> {
@@ -141,13 +144,13 @@ public class UnoPlayingFieldPanel extends JPanel {
 				@Override
 				public void run() {
 					if(clientPlayer.equals(unoPlayingField.getCurrentPlayer())) {
-						playerHandPanel.hideCards(); // TODO Implement this so that players can't change to other card while they select color
+						playerHandPanel.toggleDisableCards();
 						if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 12 || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 14) {
-							waitForColorPick();
-							unoPlayingField.setCardColor(unoPlayingField.getCurrentPlayer(), unoPlayingField.getPlayerHand(unoPlayingField.getCurrentPlayer()).getSelectedCard(), color.get());
+							unoPlayingField.setCardColor(clientPlayer, unoPlayingField.getSelectedCard(clientPlayer), waitForColorPick());
 						}
 						unoPlayingField.placeCard(unoPlayingField.getSelectedCard(clientPlayer), clientPlayer);
 						resetColor();
+						playerHandPanel.toggleDisableCards();
 					}
 					playerHandPanel.updateField();
 					lastCardsField.updateField();
@@ -172,11 +175,11 @@ public class UnoPlayingFieldPanel extends JPanel {
 
 	private int waitForColorPick() {
 		color.set(-1);
-		lblColorInfo.setText("Select Color!");
+		colorPanel.setVisible(true);
 		while(color.get() == -1) {
-			System.out.print("");
+			System.out.print("WAIT");
 		}
-		lblColorInfo.setText("No Wildcard / Draw 4 Selected");
+		colorPanel.setVisible(false);
 		return color.get();
 	}
 

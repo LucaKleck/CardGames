@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -44,7 +45,7 @@ public class UnoPlayingField implements Serializable {
 	private Player currentPlayer = null;
 	private Boolean placedCardFlag = false;
 	private int drawCardStackNumber = 0;
-	
+	private boolean isReverse = false;
 	
 	public UnoPlayingField(Player hostPlayer) throws IOException, ClassNotFoundException {
 		this.setPlayer(hostPlayer);
@@ -56,16 +57,20 @@ public class UnoPlayingField implements Serializable {
 		
 		players.add(new Pair<Player, PlayerHand>(hostPlayer, new PlayerHand(this)));
 		
-		// TODO check if card is WILD / +4 and set color to random
 		currentCard = drawCard();
+		if(currentCard.getColor() == 4) {
+			Random r = new Random();
+			currentCard.setColor(r.nextInt(3), currentCard);
+		}
 		currentPlayer = hostPlayer;
 		
 		serverExecutor.execute(new ServerClass());
 		waitForPlayerTwo();
 	}
 	
-	public UnoPlayingField(Player clientPlayer, boolean isClient) throws UnknownHostException, IOException, ClassNotFoundException, InterruptedException {
+	public UnoPlayingField(Player clientPlayer, InetAddress hostIP) throws UnknownHostException, IOException, ClassNotFoundException, InterruptedException {
 		this.setPlayer(clientPlayer);
+		this.host = hostIP;
 		this.propertyChangeSupport = new PropertyChangeSupport(this);
 		
 		this.isClient=true;
@@ -256,8 +261,11 @@ public class UnoPlayingField implements Serializable {
 			return cardDeck.drawCard();
 		}
 	}
-	
-	public void drawCard(Player clientPlayer) {
+	/**
+	 * Draws cards and adds them to player's hand
+	 * @param player
+	 */
+	public void drawCard(Player player) {
 		if (isClient) {
 			try {
 				Socket clientSocket = null;
@@ -270,7 +278,7 @@ public class UnoPlayingField implements Serializable {
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
 				clientOos.writeObject("drawCardForPlayer");
-				clientOos.writeObject(clientPlayer);
+				clientOos.writeObject(player);
 				
 				clientOis.close();
 				clientOos.close();
@@ -281,21 +289,43 @@ public class UnoPlayingField implements Serializable {
 		} else {
 			if(drawCardStackNumber != 0) {
 				while (drawCardStackNumber > 0) {
-					getPlayerHand(clientPlayer).getPlayerCards().add(drawCard());
+					getPlayerHand(player).getPlayerCards().add(drawCard());
 					drawCardStackNumber--;
 				}
 			} else {
-				getPlayerHand(clientPlayer).getPlayerCards().add(drawCard());
+				getPlayerHand(player).getPlayerCards().add(drawCard());
 			}
-			nextPlayer(currentPlayer);
+			if(!canPlaceCard(player)) {
+				nextPlayer(currentPlayer);
+			}
 		}
 		
 	}
-	
+	/**
+	 * returns true if player can place any card
+	 * @param player
+	 * @return canPlaceCard
+	 */
+	private boolean canPlaceCard(Player player) {
+		for(UnoCard u : getPlayerHand(player).getPlayerCards()) {
+			if(isPlacable(u)) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Fills the deck with a new full set of UNO cards
+	 */
 	private void refillDeck() {
 		cardDeck.fill(createDeck());
 	}
 
+	/**
+	 * Plays a card
+	 * @param uCard - uCard (user card), the card you want to play, usually only a copy of the selected card
+	 * @param sender - the player that sent the request to have his card played
+	 * @return returns true if card was placed successfully
+	 */
 	public boolean placeCard(UnoCard uCard, Player sender) {
 		if(!isPlacable(uCard)) return false;
 		Boolean oldPlacedCardFlag = new Boolean(placedCardFlag);
@@ -322,8 +352,23 @@ public class UnoPlayingField implements Serializable {
 			}
 		} else {
 			placedCards.add(currentCard);
+			
 			currentCard = null;
 			currentCard = getPlayerHand(sender).playSelectedCard();
+			
+			if(currentCard.getCardId() == 11) {
+				isReverse = !isReverse;
+			}
+			if(currentCard.getCardId() == 10) {
+				nextPlayer(currentPlayer);
+			}
+			if(currentCard.getCardId() == 13) {
+				drawCardStackNumber += 2;
+			}
+			if(currentCard.getCardId() == 14) {
+				drawCardStackNumber += 4;
+			}
+			
 			nextPlayer(currentPlayer);
 			propertyChangeSupport.getPropertyChangeListeners()[0].propertyChange(new PropertyChangeEvent(this, "PlacedCardFlag", oldPlacedCardFlag, placedCardFlag));
 		}
@@ -332,6 +377,9 @@ public class UnoPlayingField implements Serializable {
 	
 	public void setCardColor(Player sender, UnoCard selectedCard, int color) {
 		if(isClient) { // Send card and color to server to change there
+			System.out.println("SENT");
+			System.out.println(sender);
+			System.out.println(color);
 			try {
 				Socket clientSocket = null;
 				ObjectOutputStream clientOos = null;
@@ -359,14 +407,29 @@ public class UnoPlayingField implements Serializable {
 	}
 	
 	private void nextPlayer(Player p) {
-		for(Iterator<Pair<Player, PlayerHand>> iterator = players.iterator(); iterator.hasNext(); ) {
-			if (p.equals(iterator.next().getKey())) {
-				if(iterator.hasNext()) {
-					currentPlayer = iterator.next().getKey();
-				} else {
-					currentPlayer = players.getFirst().getKey();
+		if(isReverse) {
+			// TODO add logic if the reverse card was played
+			// Placeholder
+			for(Iterator<Pair<Player, PlayerHand>> iterator = players.iterator(); iterator.hasNext(); ) {
+				if (p.equals(iterator.next().getKey())) {
+					if(iterator.hasNext()) {
+						currentPlayer = iterator.next().getKey();
+					} else {
+						currentPlayer = players.getFirst().getKey();
+					}
+					return;
 				}
-				return;
+			}
+		} else {
+			for(Iterator<Pair<Player, PlayerHand>> iterator = players.iterator(); iterator.hasNext(); ) {
+				if (p.equals(iterator.next().getKey())) {
+					if(iterator.hasNext()) {
+						currentPlayer = iterator.next().getKey();
+					} else {
+						currentPlayer = players.getFirst().getKey();
+					}
+					return;
+				}
 			}
 		}
 	}
@@ -374,7 +437,18 @@ public class UnoPlayingField implements Serializable {
 	private boolean isPlacable(UnoCard uCard) {
 		if(uCard == null) return false;
 		
-		if(uCard.getCardId() == this.getCurrentCard().getCardId() || uCard.getColor() == this.getCurrentCard().getColor() || this.getCurrentCard().getCardId() == 12) {
+		if(uCard.getCardId() == 14) return true; // Always play +4 cards
+		
+		if(uCard.getCardId() == getCurrentCard().getCardId() 
+				|| (uCard.getColor() == this.getCurrentCard().getColor() 
+					&& getCurrentCard().getCardId() != 12 
+					&& getCurrentCard().getCardId() != 14) ) {
+			
+			// if its a wild card and there is a +X card as current card
+			if( (uCard.getCardId() == 12 
+					&& getCurrentCard().getCardId() == 14 
+					&& getCurrentCard().getCardId() == 13)) return false; 
+			
 			return true;
 		}
 		return false;
@@ -409,9 +483,26 @@ public class UnoPlayingField implements Serializable {
 		}
 	}
 	
-	
+	/**
+	 * This should only be executed by the server
+	 * @param p - player you'd like to add
+	 */
 	public synchronized void addPlayer(Player p) {
 		players.add(new Pair<Player, PlayerHand>(p, new PlayerHand(this)));
+	}
+	
+	/**
+	 * This should only be executed by the server
+	 * @param p - player you wish to remove
+	 */
+	public synchronized void removePlayer(Player p) {
+		Pair<Player, PlayerHand> pPair = null;
+		for(Pair<Player, PlayerHand> pair : players) {
+			if (pair.getKey().equals(p)) {
+				pPair = pair;
+			}
+		}
+		players.remove(pPair);
 	}
 	
 	private void waitForPlayerTwo() {

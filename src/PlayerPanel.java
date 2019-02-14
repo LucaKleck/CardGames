@@ -9,6 +9,7 @@ public class PlayerPanel extends JScrollPane {
 	private UnoPlayingField unoSpielfeld;
 	private Player player;
 	private JPanel viewport = new JPanel();
+	private boolean disableCards = false;
 	
 	public PlayerPanel(Player player, UnoPlayingField unoSpielfeld) {
 		this.unoSpielfeld = unoSpielfeld;
@@ -28,7 +29,7 @@ public class PlayerPanel extends JScrollPane {
 		
 		for(int i = 0; i < unoSpielfeld.getPlayerHand(player).getPlayerCards().size(); i++) {
 			GraphicUnoCard graphicUnoCard2 = new GraphicUnoCard(unoSpielfeld.getPlayerHand(player).getPlayerCards().get(i));
-			graphicUnoCard2.addMouseListener( new PlayerCardListener(unoSpielfeld.getPlayerHand(player).getPlayerCards().get(i), unoSpielfeld.getPlayerHand(player), unoSpielfeld, new PlayerCardChangeListener(this) ));
+			graphicUnoCard2.addMouseListener( new PlayerCardListener(unoSpielfeld.getPlayerHand(player).getPlayerCards().get(i), unoSpielfeld.getPlayerHand(player), unoSpielfeld, new PlayerCardChangeListener(this), this ));
 			viewport.add(graphicUnoCard2, "cell "+(i+1)+" 0");
 		}
 	}
@@ -44,8 +45,12 @@ public class PlayerPanel extends JScrollPane {
 		return player;
 	}
 
-	public void hideCards() {
-		
+	public boolean isDisabledCards() {
+		return disableCards;
+	}
+	
+	public void toggleDisableCards() {
+		this.disableCards = !disableCards; 
 	}
 	
 }
