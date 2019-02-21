@@ -1,3 +1,4 @@
+package core;
 import java.io.Serializable;
 
 public class Player implements Serializable {

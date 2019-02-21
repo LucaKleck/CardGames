@@ -1,3 +1,4 @@
+package uno.frames;
 import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -10,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextPane;
 import javax.swing.Timer;
 
+import core.Player;
 import net.miginfocom.swing.MigLayout;
 import javax.swing.JLabel;
 

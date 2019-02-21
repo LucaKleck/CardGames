@@ -1,3 +1,6 @@
+package core;
+
+import core.frames.MainJFrame;
 
 public class Start {
 

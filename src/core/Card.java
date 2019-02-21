@@ -1,3 +1,4 @@
+package core;
 import java.io.Serializable;
 
 public abstract class Card implements Serializable{

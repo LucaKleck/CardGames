@@ -1,8 +1,11 @@
+package uno;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.Serializable;
+
+import core.Card;
 
 public class UnoCard extends Card implements Serializable {
 	/**

@@ -1,9 +1,12 @@
+package uno;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.Socket;
 import java.util.ArrayList;
+
+import uno.frames.UnoPlayingField;
 
 public class PlayerHand implements Serializable {
 	/**

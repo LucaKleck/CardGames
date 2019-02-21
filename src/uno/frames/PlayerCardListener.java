@@ -1,8 +1,12 @@
+package uno.frames;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+
+import uno.PlayerHand;
+import uno.UnoCard;
 
 public class PlayerCardListener implements MouseListener {
 	private PropertyChangeSupport propertyChangeSupport;

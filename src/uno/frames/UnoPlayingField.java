@@ -1,3 +1,4 @@
+package uno.frames;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -17,7 +18,11 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import core.CardDeck;
+import core.Player;
 import javafx.util.Pair;
+import uno.PlayerHand;
+import uno.UnoCard;
 
 
 public class UnoPlayingField implements Serializable {

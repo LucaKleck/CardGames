@@ -1,8 +1,11 @@
+package uno.frames;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
+import core.Player;
 import net.miginfocom.swing.MigLayout;
+import uno.UnoCard;
 
 public class PlayerPanel extends JScrollPane {
 	private static final long serialVersionUID = 1L;

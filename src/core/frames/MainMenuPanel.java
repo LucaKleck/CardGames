@@ -1,3 +1,4 @@
+package core.frames;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
@@ -5,7 +6,11 @@ import java.util.Random;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+
+import core.Player;
 import net.miginfocom.swing.MigLayout;
+import uno.frames.UnoPlayingFieldPanel;
+
 import javax.swing.JLabel;
 
 public class MainMenuPanel extends JPanel {

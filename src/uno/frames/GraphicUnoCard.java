@@ -1,8 +1,11 @@
+package uno.frames;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JPanel;
+
+import uno.UnoCard;
 
 public class GraphicUnoCard extends JPanel {
 	private static final long serialVersionUID = 1L;
