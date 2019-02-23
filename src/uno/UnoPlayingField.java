@@ -97,6 +97,7 @@ public class UnoPlayingField implements Serializable {
 			System.exit(0);
 		}
 		
+		clientOos.flush();
 		
 		clientOis.close();
 		clientOos.close();
@@ -123,6 +124,8 @@ public class UnoPlayingField implements Serializable {
 				
 				clientOos.writeObject(ClientCommands.getCurrentCard);
 				serverCard = (UnoCard) clientOis.readObject();
+				
+				clientOos.flush();
 				
 				clientOis.close();
 				clientOos.close();
@@ -151,6 +154,8 @@ public class UnoPlayingField implements Serializable {
 				
 				clientOos.writeObject(ClientCommands.getCurrentPlayer);
 				serverPlayer = (Player) clientOis.readObject();
+				
+				clientOos.flush();
 				
 				clientOis.close();
 				clientOos.close();
@@ -181,6 +186,8 @@ public class UnoPlayingField implements Serializable {
 				clientOos.writeObject(p);
 				
 				hand = (PlayerHand) clientOis.readObject();
+				
+				clientOos.flush();
 				
 				clientOis.close();
 				clientOos.close();
@@ -216,6 +223,8 @@ public class UnoPlayingField implements Serializable {
 				clientOos.writeObject(clientPlayer);
 				uCard = (UnoCard) clientOis.readObject();
 				
+				clientOos.flush();
+				
 				clientOis.close();
 				clientOos.close();
 				clientSocket.close();
@@ -250,6 +259,8 @@ public class UnoPlayingField implements Serializable {
 				clientOos.writeObject(ClientCommands.drawCard);
 				unoCard = (UnoCard) clientOis.readObject();
 				
+				clientOos.flush();
+				
 				clientOis.close();
 				clientOos.close();
 				clientSocket.close();
@@ -282,6 +293,8 @@ public class UnoPlayingField implements Serializable {
 				
 				clientOos.writeObject(ClientCommands.drawCardForPlayer);
 				clientOos.writeObject(player);
+				
+				clientOos.flush();
 				
 				clientOis.close();
 				clientOos.close();
@@ -356,6 +369,8 @@ public class UnoPlayingField implements Serializable {
 				clientOos.writeObject(ClientCommands.placeCard);
 				clientOos.writeObject(uCard);
 				clientOos.writeObject(sender);
+				
+				clientOos.flush();
 				
 				clientOis.close();
 				clientOos.close();
@@ -432,6 +447,8 @@ public class UnoPlayingField implements Serializable {
 				clientOos.writeObject(p);
 				
 				nextPlayer = (Player) clientOis.readObject();
+				
+				clientOos.flush();
 				
 				clientOis.close();
 				clientOos.close();
@@ -510,6 +527,8 @@ public class UnoPlayingField implements Serializable {
 				
 				clientOos.writeObject(ClientCommands.getPlacedCards);
 				pc = (ArrayList<UnoCard>) clientOis.readObject();
+				
+				clientOos.flush();
 				
 				clientOis.close();
 				clientOos.close();
@@ -637,6 +656,9 @@ public class UnoPlayingField implements Serializable {
 						int color = ois.readInt();
 						setCardColor(sender, color);
 					}
+					
+					oos.flush();
+					
 					ois.close();
 					oos.close();
 					socket.close();

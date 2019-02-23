@@ -31,7 +31,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 	private JButton btnYellow;
 
 	
-	private Timer t = new Timer(1000, e-> {
+	private Timer t = new Timer(5000, e-> {
 		lastCardsField.updateField();
 		playerHandPanel.updateField();
 		updateText();
