@@ -148,12 +148,25 @@ public class UnoPlayingFieldPanel extends JPanel {
 				@Override
 				public void run() {
 					if(clientPlayer.equals(unoPlayingField.getCurrentPlayer())) {
+						
 						playerHandPanel.toggleDisableCards();
-						if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 12 || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 14) {
-							unoPlayingField.setCardColor(clientPlayer, unoPlayingField.getSelectedCard(clientPlayer), waitForColorPick());
+						btnDrawCard.setVisible(false);
+						
+						if(unoPlayingField.getSelectedCard(clientPlayer) != null) {
+							if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_WILD || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_DRAW_FOUR) {
+								System.out.println("ALERT");
+								System.out.println(waitForColorPick());
+								unoPlayingField.setCardColor(clientPlayer, color.get());
+								try {
+									Thread.sleep(100);
+								} catch (InterruptedException e) {
+								}
+							}
+							unoPlayingField.placeCard(unoPlayingField.getSelectedCard(clientPlayer), clientPlayer);
 						}
-						unoPlayingField.placeCard(unoPlayingField.getSelectedCard(clientPlayer), clientPlayer);
+						
 						resetColor();
+						btnDrawCard.setVisible(true);
 						playerHandPanel.toggleDisableCards();
 					}
 					playerHandPanel.updateField();
@@ -181,7 +194,6 @@ public class UnoPlayingFieldPanel extends JPanel {
 		color.set(-1);
 		colorPanel.setVisible(true);
 		while(color.get() == -1) {
-			System.out.print("");
 		}
 		colorPanel.setVisible(false);
 		return color.get();

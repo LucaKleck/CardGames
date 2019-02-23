@@ -58,10 +58,9 @@ public class UnoCard extends Card {
 
 	/**
 	 * @param desiredColor
-	 * @param wildOrFourCard
 	 */
-	public void setColor(int desiredColor, UnoCard wildOrFourCard) {
-		if(wildOrFourCard.getCardId() == CARD_WILD || wildOrFourCard.getCardId() == CARD_DRAW_FOUR) {
+	public void setColor(int desiredColor) {
+		if(this.cardId == CARD_WILD || this.cardId == CARD_DRAW_FOUR) {
 			this.color = desiredColor;
 		}
 	}

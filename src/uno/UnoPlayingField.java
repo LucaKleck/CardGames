@@ -48,7 +48,6 @@ public class UnoPlayingField implements Serializable {
 	private Boolean placedCardFlag = false;
 	private int drawCardStackNumber = 0;
 	private boolean isReverse = false;
-	@SuppressWarnings("unused")
 	private boolean hasDrawn = false;
 	
 	public UnoPlayingField(Player hostPlayer) throws IOException, ClassNotFoundException {
@@ -64,7 +63,7 @@ public class UnoPlayingField implements Serializable {
 		currentCard = drawCard();
 		if(currentCard.getColor() == UnoCard.COLOR_WILD) {
 			Random r = new Random();
-			currentCard.setColor(r.nextInt(3), currentCard);
+			currentCard.setColor(r.nextInt(3));
 		}
 		currentPlayer = hostPlayer;
 		
@@ -291,6 +290,11 @@ public class UnoPlayingField implements Serializable {
 			} catch (IOException e) {
 			}
 		} else {
+			if(hasDrawn) {
+				currentPlayer = getNextPlayer(player);
+				hasDrawn = false;
+				return;
+			}
 			if(drawCardStackNumber != 0) {
 				while (drawCardStackNumber > 0) {
 					getPlayerHand(player).getPlayerCards().add(drawCard());
@@ -384,30 +388,30 @@ public class UnoPlayingField implements Serializable {
 		return true;
 	}
 	
-	public void setCardColor(Player sender, UnoCard selectedCard, int color) {
+	public void setCardColor(Player sender, int color) {
 		if(isClient) { // Send card and color to server to change there
 			try {
 				Socket clientSocket = null;
 				ObjectOutputStream clientOos = null;
-				ObjectInputStream clientOis = null;
 				
 				clientSocket = new Socket(host.getHostName(), PORT);
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
-				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
 				clientOos.writeObject(ClientCommands.setCardColor);
 				clientOos.writeObject(sender);
-				clientOos.writeObject(selectedCard);
 				clientOos.writeInt(color);
 				
-				clientOis.close();
+				clientOos.flush();
+				
 				clientOos.close();
+				
 				clientSocket.close();
-				propertyChangeSupport.getPropertyChangeListeners()[0].propertyChange(new PropertyChangeEvent(this, "Change", false, true));
 			} catch (IOException e) {
+				e.printStackTrace();
 			}
+			propertyChangeSupport.getPropertyChangeListeners()[0].propertyChange(new PropertyChangeEvent(this, "Change", false, true));
 		} else {
-			selectedCard.setColor(color, selectedCard);
+			getSelectedCard(sender).setColor(color);
 			propertyChangeSupport.getPropertyChangeListeners()[0].propertyChange(new PropertyChangeEvent(this, "Change", false, true));
 		}
 	}
@@ -473,8 +477,8 @@ public class UnoPlayingField implements Serializable {
 				|| (currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) ) {
 			return true;
 		}
-		if(uCard.getColor() == currentCard.getColor() && (currentCard.getCardId() == UnoCard.CARD_DRAW_FOUR || currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) {
-			
+		if(uCard.getColor() == currentCard.getColor() && !(uCard.getCardId() == UnoCard.CARD_DRAW_FOUR || uCard.getCardId() == UnoCard.CARD_DRAW_TWO) && (currentCard.getCardId() == UnoCard.CARD_DRAW_FOUR || currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) {
+			return false;
 		}
 		// General statement for other cases
 		// if the number/symbol on the card is the same the card can be placed
@@ -485,21 +489,11 @@ public class UnoPlayingField implements Serializable {
 		if(uCard.getColor() == currentCard.getColor()) {
 			return true;
 		}
-		/*if(uCard.getCardId() == getCurrentCard().getCardId() 
-				|| (uCard.getColor() == this.getCurrentCard().getColor() 
-					&& getCurrentCard().getCardId() != UnoCard.CARD_WILD
-					&& getCurrentCard().getCardId() != UnoCard.CARD_DRAW_FOUR) ) {
-			
-			// if its a wild card and there is a +X card as current card
-			if( (uCard.getCardId() == UnoCard.CARD_WILD
-					&& getCurrentCard().getCardId() == UnoCard.CARD_DRAW_FOUR
-					&& getCurrentCard().getCardId() == UnoCard.CARD_DRAW_TWO)) return false; 
-			// Not needed I think, since they need to draw the cards if they want to place on top of a +Card
-			
-			return true;
-		}*/
 		return false;
 	}
+	/**
+	 * @return the array list of all currently placed cards
+	 */
 	@SuppressWarnings("unchecked")
 	public ArrayList<UnoCard> getplacedUnoCards() {
 		if(isClient) {
@@ -640,18 +634,8 @@ public class UnoPlayingField implements Serializable {
 					}
 					if(instruction == ClientCommands.setCardColor) {
 						Player sender = (Player) ois.readObject();
-						UnoCard toBeChangedUnoCard = (UnoCard) ois.readObject();
 						int color = ois.readInt();
-						PlayerHand serverPlayerHand = null;
-						
-						serverPlayerHand = getPlayerInfoPair(sender).getHand();
-						
-						for (UnoCard unoCard : serverPlayerHand.getPlayerCards()) {
-							if(unoCard.equals(toBeChangedUnoCard)) {
-								setCardColor(sender, unoCard, color);
-								break;
-							}
-						}
+						setCardColor(sender, color);
 					}
 					ois.close();
 					oos.close();
