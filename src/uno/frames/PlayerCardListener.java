@@ -7,6 +7,7 @@ import java.beans.PropertyChangeSupport;
 
 import uno.PlayerHand;
 import uno.UnoCard;
+import uno.UnoPlayingField;
 
 public class PlayerCardListener implements MouseListener {
 	private PropertyChangeSupport propertyChangeSupport;

@@ -3,15 +3,17 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
 
 import core.Card;
 
-public class UnoCard extends Card implements Serializable {
+public class UnoCard extends Card {
+
 	/**
-	 * Uno Card
+	 * 
 	 */
-	private static final long serialVersionUID = -1541976897604713032L;
+	private static final long serialVersionUID = 7566613325600786474L;
 
 	private static int cardCount = 0;
 	
@@ -49,7 +51,7 @@ public class UnoCard extends Card implements Serializable {
 	private int cardIdentifier = ++cardCount;
 	
 	public UnoCard(int color, int cardId) {
-		super("UnoCard");
+		super(CardType.UNO);
 		this.color = color;
 		this.cardId = cardId;
 	}
@@ -59,9 +61,7 @@ public class UnoCard extends Card implements Serializable {
 	 * @param wildOrFourCard
 	 */
 	public void setColor(int desiredColor, UnoCard wildOrFourCard) {
-		System.out.println(wildOrFourCard);
-		System.out.println(desiredColor);
-		if(wildOrFourCard.getCardId() == 12 || wildOrFourCard.getCardId() == 14) {
+		if(wildOrFourCard.getCardId() == CARD_WILD || wildOrFourCard.getCardId() == CARD_DRAW_FOUR) {
 			this.color = desiredColor;
 		}
 	}
@@ -92,10 +92,10 @@ public class UnoCard extends Card implements Serializable {
 		g.setColor(getColorFromCard(this));
 		g.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 		g.setColor(Color.BLACK);
-		g.setFont(new Font("TimesRoman", Font.BOLD, 16)); 
-		g.drawString(this.toString(), 6, 18);
+		g.setFont(new Font("TimesRoman", Font.BOLD, 18)); 
+		g.drawString(this.toString(), 6, 19);
 		g.setColor(Color.WHITE);
-		g.setFont(new Font("TimesRoman", Font.BOLD, 16)); 
+		g.setFont(new Font("TimesRoman", Font.BOLD, 18)); 
 		g.drawString(this.toString(), 5, 18);
 		return bufferedImage;
 	}
@@ -120,5 +120,54 @@ public class UnoCard extends Card implements Serializable {
 			}
 		}
 		return super.equals(obj);
+	}
+	
+	public static ArrayList<UnoCard> createDeck() {
+		ArrayList<UnoCard> cardList = new ArrayList<UnoCard>();
+		
+		cardList.add(new UnoCard(UnoCard.COLOR_RED, UnoCard.CARD_ZERO));
+		cardList.add(new UnoCard(UnoCard.COLOR_BLUE, UnoCard.CARD_ZERO));
+		cardList.add(new UnoCard(UnoCard.COLOR_GREEN, UnoCard.CARD_ZERO));
+		cardList.add(new UnoCard(UnoCard.COLOR_YELLOW, UnoCard.CARD_ZERO));
+		
+		// Pairs of two, each color
+		for(int color = 0; color <= 3; color++) {
+			for(int cardid = 1; cardid < 12; cardid++) {
+				for(int cardamount = 0; cardamount < 2; cardamount++)  {
+					cardList.add(new UnoCard(color, cardid));
+				}
+			}
+		}
+			
+		// draw red
+		cardList.add(new UnoCard(UnoCard.COLOR_RED, UnoCard.CARD_DRAW_TWO));
+		cardList.add(new UnoCard(UnoCard.COLOR_RED, UnoCard.CARD_DRAW_TWO));
+		
+		// draw blue	
+		cardList.add(new UnoCard(UnoCard.COLOR_BLUE, UnoCard.CARD_DRAW_TWO));
+		cardList.add(new UnoCard(UnoCard.COLOR_BLUE, UnoCard.CARD_DRAW_TWO));
+		
+		// draw green
+		cardList.add(new UnoCard(UnoCard.COLOR_GREEN, UnoCard.CARD_DRAW_TWO));
+		cardList.add(new UnoCard(UnoCard.COLOR_GREEN, UnoCard.CARD_DRAW_TWO));
+		
+		// draw yellow
+		cardList.add(new UnoCard(UnoCard.COLOR_YELLOW, UnoCard.CARD_DRAW_TWO));
+		cardList.add(new UnoCard(UnoCard.COLOR_YELLOW, UnoCard.CARD_DRAW_TWO));
+			
+		// Wild cards
+		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
+		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
+		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
+		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
+			
+		// Draw Four
+		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
+		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
+		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
+		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
+
+		Collections.shuffle(cardList);
+		return cardList;
 	}
 }

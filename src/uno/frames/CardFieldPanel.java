@@ -4,6 +4,7 @@ import javax.swing.JScrollPane;
 
 import net.miginfocom.swing.MigLayout;
 import uno.UnoCard;
+import uno.UnoPlayingField;
 
 public class CardFieldPanel extends JScrollPane {
 	private static final long serialVersionUID = 1L;

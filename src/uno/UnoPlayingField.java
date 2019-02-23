@@ -1,4 +1,4 @@
-package uno.frames;
+package uno;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -11,18 +11,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import core.CardDeck;
 import core.Player;
-import javafx.util.Pair;
-import uno.PlayerHand;
-import uno.UnoCard;
 
 
 public class UnoPlayingField implements Serializable {
@@ -39,10 +36,10 @@ public class UnoPlayingField implements Serializable {
 	
 	// if isClient == false
 	private static ExecutorService serverExecutor = Executors.newFixedThreadPool(1);
-	private static ServerSocket server;
+	private static ServerSocket server; // TODO change to lobby or something
 
 	private PropertyChangeSupport propertyChangeSupport;
-	private LinkedList< Pair<Player, PlayerHand> > players = new LinkedList<>();
+	private LinkedList< PlayerInfoPair > players = new LinkedList<>();
 	private Player player;
 	private CardDeck<UnoCard> cardDeck;
 	private ArrayList<UnoCard> placedCards = new ArrayList<UnoCard>();
@@ -51,26 +48,27 @@ public class UnoPlayingField implements Serializable {
 	private Boolean placedCardFlag = false;
 	private int drawCardStackNumber = 0;
 	private boolean isReverse = false;
+	@SuppressWarnings("unused")
+	private boolean hasDrawn = false;
 	
 	public UnoPlayingField(Player hostPlayer) throws IOException, ClassNotFoundException {
 		this.setPlayer(hostPlayer);
-		cardDeck = new CardDeck<UnoCard>(createDeck());
+		cardDeck = new CardDeck<UnoCard>(UnoCard.createDeck());
 		
 		server = new ServerSocket(PORT);
 		
 		this.propertyChangeSupport = new PropertyChangeSupport(this);
 		
-		players.add(new Pair<Player, PlayerHand>(hostPlayer, new PlayerHand(this)));
+		addPlayer(hostPlayer);
 		
 		currentCard = drawCard();
-		if(currentCard.getColor() == 4) {
+		if(currentCard.getColor() == UnoCard.COLOR_WILD) {
 			Random r = new Random();
 			currentCard.setColor(r.nextInt(3), currentCard);
 		}
 		currentPlayer = hostPlayer;
 		
-		serverExecutor.execute(new ServerClass());
-		waitForPlayerTwo();
+		serverExecutor.execute(new ServerClientCommandHandler());
 	}
 	
 	public UnoPlayingField(Player clientPlayer, InetAddress hostIP) throws UnknownHostException, IOException, ClassNotFoundException, InterruptedException {
@@ -90,7 +88,7 @@ public class UnoPlayingField implements Serializable {
 		clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 		clientOis = new ObjectInputStream(clientSocket.getInputStream());
 		
-		clientOos.writeObject("join");
+		clientOos.writeObject(ClientCommands.join);
 		clientOos.writeObject(clientPlayer);
 		
 		Player p = (Player) clientOis.readObject();
@@ -124,7 +122,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
-				clientOos.writeObject("getCurrentCard");
+				clientOos.writeObject(ClientCommands.getCurrentCard);
 				serverCard = (UnoCard) clientOis.readObject();
 				
 				clientOis.close();
@@ -152,7 +150,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
-				clientOos.writeObject("getCurrentPlayer");
+				clientOos.writeObject(ClientCommands.getCurrentPlayer);
 				serverPlayer = (Player) clientOis.readObject();
 				
 				clientOis.close();
@@ -180,7 +178,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
-				clientOos.writeObject("getPlayerHand");
+				clientOos.writeObject(ClientCommands.getPlayerHand);
 				clientOos.writeObject(p);
 				
 				hand = (PlayerHand) clientOis.readObject();
@@ -194,9 +192,9 @@ public class UnoPlayingField implements Serializable {
 			}
 			return hand;
 		} else {
-			for(Pair<Player, PlayerHand> pair : players) {
-				if (pair.getKey().equals(p)) {
-					hand = pair.getValue();
+			for(PlayerInfoPair pair : players) {
+				if (pair.getPlayer().equals(p)) {
+					hand = pair.getHand();
 				}
 			}
 			return hand; 
@@ -215,7 +213,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
-				clientOos.writeObject("getSelectedCard");
+				clientOos.writeObject(ClientCommands.getSelectedCard);
 				clientOos.writeObject(clientPlayer);
 				uCard = (UnoCard) clientOis.readObject();
 				
@@ -250,7 +248,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
-				clientOos.writeObject("drawCard");
+				clientOos.writeObject(ClientCommands.drawCard);
 				unoCard = (UnoCard) clientOis.readObject();
 				
 				clientOis.close();
@@ -283,7 +281,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
-				clientOos.writeObject("drawCardForPlayer");
+				clientOos.writeObject(ClientCommands.drawCardForPlayer);
 				clientOos.writeObject(player);
 				
 				clientOis.close();
@@ -301,8 +299,10 @@ public class UnoPlayingField implements Serializable {
 			} else {
 				getPlayerHand(player).getPlayerCards().add(drawCard());
 			}
+			hasDrawn = true;
 			if(!canPlaceCard(player)) {
-				nextPlayer(currentPlayer);
+				currentPlayer = getNextPlayer(player);
+				hasDrawn=false;
 			}
 		}
 		
@@ -316,6 +316,9 @@ public class UnoPlayingField implements Serializable {
 		for(UnoCard u : getPlayerHand(player).getPlayerCards()) {
 			if(isPlacable(u)) return true;
 		}
+		if(isPlacable(getPlayerHand(player).getSelectedCard())) {
+			return true;
+		}
 		return false;
 	}
 
@@ -323,7 +326,7 @@ public class UnoPlayingField implements Serializable {
 	 * Fills the deck with a new full set of UNO cards
 	 */
 	private void refillDeck() {
-		cardDeck.fill(createDeck());
+		cardDeck.fill(UnoCard.createDeck());
 	}
 
 	/**
@@ -346,7 +349,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
-				clientOos.writeObject("placeCard");
+				clientOos.writeObject(ClientCommands.placeCard);
 				clientOos.writeObject(uCard);
 				clientOos.writeObject(sender);
 				
@@ -366,7 +369,7 @@ public class UnoPlayingField implements Serializable {
 				isReverse = !isReverse;
 			}
 			if(currentCard.getCardId() == 10) {
-				nextPlayer(currentPlayer);
+				getNextPlayer(currentPlayer);
 			}
 			if(currentCard.getCardId() == 13) {
 				drawCardStackNumber += 2;
@@ -375,7 +378,7 @@ public class UnoPlayingField implements Serializable {
 				drawCardStackNumber += 4;
 			}
 			
-			nextPlayer(currentPlayer);
+			currentPlayer = getNextPlayer(currentPlayer);
 			propertyChangeSupport.getPropertyChangeListeners()[0].propertyChange(new PropertyChangeEvent(this, "PlacedCardFlag", oldPlacedCardFlag, placedCardFlag));
 		}
 		return true;
@@ -383,9 +386,6 @@ public class UnoPlayingField implements Serializable {
 	
 	public void setCardColor(Player sender, UnoCard selectedCard, int color) {
 		if(isClient) { // Send card and color to server to change there
-			System.out.println("SENT");
-			System.out.println(sender);
-			System.out.println(color);
 			try {
 				Socket clientSocket = null;
 				ObjectOutputStream clientOos = null;
@@ -395,7 +395,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
-				clientOos.writeObject("setCardColor");
+				clientOos.writeObject(ClientCommands.setCardColor);
 				clientOos.writeObject(sender);
 				clientOos.writeObject(selectedCard);
 				clientOos.writeInt(color);
@@ -412,58 +412,98 @@ public class UnoPlayingField implements Serializable {
 		}
 	}
 	
-	private void nextPlayer(Player p) {
-		if(isReverse) {
-			// TODO add logic if the reverse card was played
-			// Placeholder
-			for(Iterator<Pair<Player, PlayerHand>> iterator = players.iterator(); iterator.hasNext(); ) {
-				if (p.equals(iterator.next().getKey())) {
-					if(iterator.hasNext()) {
-						currentPlayer = iterator.next().getKey();
-					} else {
-						currentPlayer = players.getFirst().getKey();
-					}
-					return;
-				}
+	public Player getNextPlayer(Player p) {
+		Player nextPlayer = null;
+		if(isClient) {
+			try {
+				Socket clientSocket = null;
+				ObjectOutputStream clientOos = null;
+				ObjectInputStream clientOis = null;
+				
+				clientSocket = new Socket(host.getHostName(), PORT);
+				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
+				clientOis = new ObjectInputStream(clientSocket.getInputStream());
+				
+				clientOos.writeObject(ClientCommands.getNextPlayer);
+				clientOos.writeObject(p);
+				
+				nextPlayer = (Player) clientOis.readObject();
+				
+				clientOis.close();
+				clientOos.close();
+				clientSocket.close();
+			} catch (IOException | ClassNotFoundException e) {
 			}
 		} else {
-			for(Iterator<Pair<Player, PlayerHand>> iterator = players.iterator(); iterator.hasNext(); ) {
-				if (p.equals(iterator.next().getKey())) {
-					if(iterator.hasNext()) {
-						currentPlayer = iterator.next().getKey();
-					} else {
-						currentPlayer = players.getFirst().getKey();
+			if(isReverse) {
+				for(ListIterator<PlayerInfoPair> iterator = players.listIterator(0); iterator.hasNext();) {
+					if (p.equals(iterator.next().getPlayer())) {
+						if(iterator.hasPrevious()) {
+							nextPlayer = iterator.previous().getPlayer();
+						} else {
+							nextPlayer = players.getLast().getPlayer();
+						}
+						return nextPlayer;
 					}
-					return;
+				}
+			} else {
+				for(Iterator<PlayerInfoPair> iterator = players.iterator(); iterator.hasNext(); ) {
+					if (p.equals(iterator.next().getPlayer())) {
+						if(iterator.hasNext()) {
+							nextPlayer = iterator.next().getPlayer();
+						} else {
+							nextPlayer = players.getFirst().getPlayer();
+						}
+						return nextPlayer;
+					}
 				}
 			}
 		}
+		return nextPlayer;
 	}
 
+	// TODO add rule sets / flags
 	private boolean isPlacable(UnoCard uCard) {
+		UnoCard currentCard = getCurrentCard();
 		if(uCard == null) return false;
 		
-		if(uCard.getCardId() == 14) return true; // Always play +4 cards
-		
-		if(uCard.getCardId() == getCurrentCard().getCardId() 
-				|| (uCard.getColor() == this.getCurrentCard().getColor() 
-					&& getCurrentCard().getCardId() != 12 
-					&& getCurrentCard().getCardId() != 14) ) {
-			
-			// if its a wild card and there is a +X card as current card
-			if( (uCard.getCardId() == 12 
-					&& getCurrentCard().getCardId() == 14 
-					&& getCurrentCard().getCardId() == 13)) return false; 
-			
+		if(uCard.getCardId() == UnoCard.CARD_DRAW_FOUR) return true; // Always play +4 cards
+		if(uCard.getCardId() == UnoCard.CARD_DRAW_TWO && // If it's a draw two card and there is a draw four on the field || Might not be in the real game
+				(currentCard.getCardId() == UnoCard.CARD_DRAW_FOUR 
+				|| (currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) ) {
 			return true;
 		}
+		if(uCard.getColor() == currentCard.getColor() && (currentCard.getCardId() == UnoCard.CARD_DRAW_FOUR || currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) {
+			
+		}
+		// General statement for other cases
+		// if the number/symbol on the card is the same the card can be placed
+		if(uCard.getCardId() == currentCard.getCardId()) {
+			return true;
+		}
+		// if the colors are the same the card can be placed
+		if(uCard.getColor() == currentCard.getColor()) {
+			return true;
+		}
+		/*if(uCard.getCardId() == getCurrentCard().getCardId() 
+				|| (uCard.getColor() == this.getCurrentCard().getColor() 
+					&& getCurrentCard().getCardId() != UnoCard.CARD_WILD
+					&& getCurrentCard().getCardId() != UnoCard.CARD_DRAW_FOUR) ) {
+			
+			// if its a wild card and there is a +X card as current card
+			if( (uCard.getCardId() == UnoCard.CARD_WILD
+					&& getCurrentCard().getCardId() == UnoCard.CARD_DRAW_FOUR
+					&& getCurrentCard().getCardId() == UnoCard.CARD_DRAW_TWO)) return false; 
+			// Not needed I think, since they need to draw the cards if they want to place on top of a +Card
+			
+			return true;
+		}*/
 		return false;
 	}
-
 	@SuppressWarnings("unchecked")
 	public ArrayList<UnoCard> getplacedUnoCards() {
 		if(isClient) {
-			ArrayList<UnoCard> pc = null;
+			ArrayList<UnoCard> pc = new ArrayList<UnoCard>();
 			try {
 				Socket clientSocket = null;
 				ObjectOutputStream clientOos = null;
@@ -474,7 +514,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 				clientOis = new ObjectInputStream(clientSocket.getInputStream());
 				
-				clientOos.writeObject("getPlacedCards");
+				clientOos.writeObject(ClientCommands.getPlacedCards);
 				pc = (ArrayList<UnoCard>) clientOis.readObject();
 				
 				clientOis.close();
@@ -494,7 +534,10 @@ public class UnoPlayingField implements Serializable {
 	 * @param p - player you'd like to add
 	 */
 	public synchronized void addPlayer(Player p) {
-		players.add(new Pair<Player, PlayerHand>(p, new PlayerHand(this)));
+		PlayerInfoPair pair = getPlayerInfoPair(p);
+		if(pair == null) {
+			players.add(new PlayerInfoPair(p, new PlayerHand(this)));
+		}
 	}
 	
 	/**
@@ -502,116 +545,108 @@ public class UnoPlayingField implements Serializable {
 	 * @param p - player you wish to remove
 	 */
 	public synchronized void removePlayer(Player p) {
-		Pair<Player, PlayerHand> pPair = null;
-		for(Pair<Player, PlayerHand> pair : players) {
-			if (pair.getKey().equals(p)) {
-				pPair = pair;
+		players.remove(getPlayerInfoPair(p));
+	}
+	/**
+	 * For synchronization
+	 * @param p - player to match
+	 * @return returns the matching PlayerInfoPair or null if there is no match
+	 */
+	private synchronized PlayerInfoPair getPlayerInfoPair(Player p) {
+		for(PlayerInfoPair pair : players) {
+			if (pair.getPlayer().equals(p)) {
+				return pair;
 			}
 		}
-		players.remove(pPair);
+		return null;
 	}
 	
-	private void waitForPlayerTwo() {
-		while(players.size() < 2) System.out.print("");
-	}
-	
-	public Player getPlayer() {
+	public synchronized Player getPlayer() {
 		return player;
 	}
 
-	private void setPlayer(Player player) {
+	private synchronized void setPlayer(Player player) {
 		this.player = player;
 	}
 
-	private class ServerClass implements Runnable {
-		public ServerClass() {
+	private class ServerClientCommandHandler implements Runnable {
+		private ServerClientCommandHandler() {
 		}
 		@Override
 		public void run() {
-			while(true) {
+			while(true) { // TODO change this to only listen when client request  comes in from lobby object 
 				try {
 					Socket socket  = server.accept();
 					
 					ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
 					ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
 					// Instruction will be sent by client
-					String instruction = (String) ois.readObject();
+					ClientCommands instruction = (ClientCommands) ois.readObject();
 					
 					// Server will try to match the instruction and respond with the desired object
-					if(instruction.matches("join")) {
+					if(instruction == ClientCommands.join) {
 						Player joinedPlayer = (Player) ois.readObject();
 						addPlayer(joinedPlayer);
 						System.out.println(joinedPlayer.toString()+" joined the game!");
 						oos.writeObject(joinedPlayer);
 					}
-					if(instruction.matches("drawCard")) {
+					if(instruction == ClientCommands.drawCard) {
 						UnoCard drawnCard = drawCard();
 						oos.writeObject(drawnCard);
 					}
-					if(instruction.matches("drawCardForPlayer")) {
+					if(instruction == ClientCommands.drawCardForPlayer) {
 						drawCard((Player) ois.readObject());
 					}
-					if(instruction.matches("placeCard")) {
+					if(instruction == ClientCommands.placeCard) {
 						placeCard((UnoCard) ois.readObject(), (Player) ois.readObject());
 					}
 					// Server getter
-					if(instruction.matches("getCurrentCard")) {
+					if(instruction == ClientCommands.getCurrentCard) {
 						UnoCard serverCard = getCurrentCard();
 						oos.writeObject(serverCard);
 					}
-					if(instruction.matches("getPlacedCards")) {
+					if(instruction == ClientCommands.getPlacedCards) {
 						oos.writeObject(getplacedUnoCards());
 					}
-					if(instruction.matches("getCurrentPlayer")) {
+					if(instruction == ClientCommands.getCurrentPlayer) {
 						Player serverPlayer = getCurrentPlayer();
 						oos.writeObject(serverPlayer);
 					}
-					if(instruction.matches("getPlayerHand")) {
+					if(instruction == ClientCommands.getPlayerHand) {
 						Player p = (Player) ois.readObject();
 						PlayerHand serverPlayerHand = null;
-						for(Pair<Player, PlayerHand> pair : players) {
-							if (pair.getKey().equals(p)) {
-								serverPlayerHand = pair.getValue();
+						for(PlayerInfoPair pair : players) {
+							if (pair.getPlayer().equals(p)) {
+								serverPlayerHand = pair.getHand();
 							}
 						}
 						oos.writeObject(serverPlayerHand);
 					}
-					if(instruction.matches("getSelectedCard")) {
+					if(instruction == ClientCommands.getSelectedCard) {
 						Player p = (Player) ois.readObject();
 						oos.writeObject(getSelectedCard(p));
 					}
-					
+					if(instruction == ClientCommands.getNextPlayer) {
+						Player p = getNextPlayer((Player) ois.readObject());
+						oos.writeObject(p);
+					}
 					// Server setter
-					if(instruction.matches("setPlayerHandSelectedCard")) {
-						Player p = (Player) ois.readObject();
+					if(instruction == ClientCommands.setPlayerHandSelectedCard) {
+						Player sender = (Player) ois.readObject();
 						UnoCard toBeSelectedUnoCard = (UnoCard) ois.readObject();
 						PlayerHand serverPlayerHand = null;
-						
-						for(Pair<Player, PlayerHand> pair : players) {
-							if (pair.getKey().equals(p)) {
-								serverPlayerHand = pair.getValue();
-							}
-						}
-						
+						serverPlayerHand = getPlayerInfoPair(sender).getHand();
 						serverPlayerHand.setSelectedCard(toBeSelectedUnoCard);
 					}
-					if(instruction.matches("setCardColor")) {
+					if(instruction == ClientCommands.setCardColor) {
 						Player sender = (Player) ois.readObject();
 						UnoCard toBeChangedUnoCard = (UnoCard) ois.readObject();
 						int color = ois.readInt();
 						PlayerHand serverPlayerHand = null;
 						
-						for(Pair<Player, PlayerHand> pair : players) {
-							System.out.println("pair check");
-							if (pair.getKey().equals(sender)) {
-								System.out.println("gets to sender");
-								serverPlayerHand = pair.getValue();
-								break;
-							}
-						}
+						serverPlayerHand = getPlayerInfoPair(sender).getHand();
 						
 						for (UnoCard unoCard : serverPlayerHand.getPlayerCards()) {
-							System.out.println("uno card check");
 							if(unoCard.equals(toBeChangedUnoCard)) {
 								setCardColor(sender, unoCard, color);
 								break;
@@ -631,58 +666,28 @@ public class UnoPlayingField implements Serializable {
 		
 	}
 	
-	private ArrayList<UnoCard> createDeck() {
-		ArrayList<UnoCard> cardList = new ArrayList<UnoCard>();
-		
-		cardList.add(new UnoCard(UnoCard.COLOR_RED, UnoCard.CARD_ZERO));
-		cardList.add(new UnoCard(UnoCard.COLOR_BLUE, UnoCard.CARD_ZERO));
-		cardList.add(new UnoCard(UnoCard.COLOR_GREEN, UnoCard.CARD_ZERO));
-		cardList.add(new UnoCard(UnoCard.COLOR_YELLOW, UnoCard.CARD_ZERO));
-		
-		// Pairs of two, each color
-		for(int color = 0; color <= 3; color++) {
-			for(int cardid = 1; cardid < 12; cardid++) {
-				for(int cardamount = 0; cardamount < 2; cardamount++)  {
-					cardList.add(new UnoCard(color, cardid));
-				}
-			}
-		}
-			
-		// draw red
-		cardList.add(new UnoCard(UnoCard.COLOR_RED, UnoCard.CARD_DRAW_TWO));
-		cardList.add(new UnoCard(UnoCard.COLOR_RED, UnoCard.CARD_DRAW_TWO));
-		
-		// draw blue	
-		cardList.add(new UnoCard(UnoCard.COLOR_BLUE, UnoCard.CARD_DRAW_TWO));
-		cardList.add(new UnoCard(UnoCard.COLOR_BLUE, UnoCard.CARD_DRAW_TWO));
-		
-		// draw green
-		cardList.add(new UnoCard(UnoCard.COLOR_GREEN, UnoCard.CARD_DRAW_TWO));
-		cardList.add(new UnoCard(UnoCard.COLOR_GREEN, UnoCard.CARD_DRAW_TWO));
-		
-		// draw yellow
-		cardList.add(new UnoCard(UnoCard.COLOR_YELLOW, UnoCard.CARD_DRAW_TWO));
-		cardList.add(new UnoCard(UnoCard.COLOR_YELLOW, UnoCard.CARD_DRAW_TWO));
-			
-		// Wild cards
-		/* temp disabled since they dont work
-		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
-		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
-		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
-		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_WILD));
-			
-		// Draw Four
-		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
-		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
-		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
-		cardList.add(new UnoCard(UnoCard.COLOR_WILD, UnoCard.CARD_DRAW_FOUR));
-		*/
-		Collections.shuffle(cardList);
-		return cardList;
-	}
-	
 	public void addPropertyChangeListener(PropertyChangeListener listener) {
 		propertyChangeSupport.addPropertyChangeListener(listener);
+	}
+	
+	public enum ClientCommands {
+		// setter
+		setCardColor,
+		setPlayerHandSelectedCard,
+		
+		// getter
+		getSelectedCard,
+		getPlayerHand,
+		getCurrentPlayer,
+		getPlacedCards,
+		getCurrentCard,
+		getNextPlayer,
+		
+		// other
+		placeCard,
+		drawCardForPlayer,
+		drawCard,
+		join;
 	}
 
 }

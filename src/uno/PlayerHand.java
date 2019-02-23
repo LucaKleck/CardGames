@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.net.Socket;
 import java.util.ArrayList;
 
-import uno.frames.UnoPlayingField;
+import uno.UnoPlayingField.ClientCommands;
 
 public class PlayerHand implements Serializable {
 	/**
@@ -56,7 +56,7 @@ public class PlayerHand implements Serializable {
 			clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
 			clientOis = new ObjectInputStream(clientSocket.getInputStream());
 			
-			clientOos.writeObject("setPlayerHandSelectedCard");
+			clientOos.writeObject(ClientCommands.setPlayerHandSelectedCard);
 			clientOos.writeObject(unoPlayingField.getPlayer());
 			clientOos.writeObject(selectedCard);
 			

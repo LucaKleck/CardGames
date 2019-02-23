@@ -6,13 +6,30 @@ public abstract class Card implements Serializable{
 	 * Card
 	 */
 	private static final long serialVersionUID = -5860863980460237488L;
-	private String typeName;
-	public Card(String typeName) {
-		this.typeName = typeName;
+
+	private CardType type;
+	
+	public Card(CardType type) {
+		this.type = type;
 	}
 	
-	public String getTypeName() {
-		return typeName;
+	public CardType getType() {
+		return type;
 	}
+	
+	public enum CardType {
+		UNO("Uno");
+		
+		private final String typeName;
+		
+		CardType(String s) {
+			typeName = s;
+		}
+		
+		public String typeName() {
+			return typeName;
+		}
+	}
+	
 
 }

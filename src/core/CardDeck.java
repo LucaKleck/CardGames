@@ -1,11 +1,14 @@
 package core;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Stack;
 
-public class CardDeck<E> {
-	private Stack<E> stack = new Stack<E>();
+public class CardDeck<CardType extends Card> implements Serializable {
+	private static final long serialVersionUID = 1761187119831119070L;
 	
-	public CardDeck(ArrayList<E> cardsToInsertArrayList) {
+	private Stack<CardType> stack = new Stack<CardType>();
+	
+	public CardDeck(ArrayList<CardType> cardsToInsertArrayList) {
 		stack.addAll(cardsToInsertArrayList);
 		this.stack.setSize(cardsToInsertArrayList.size());
 	}
@@ -14,19 +17,19 @@ public class CardDeck<E> {
 		return stack.empty();
 	}
 	
-	public E drawCard() {
+	public CardType drawCard() {
 		return stack.pop();
 	}
 	
-	public E lookAtCard() {
+	public CardType lookAtCard() {
 		return stack.peek();
 	}
 	
-	public void placeCardOnTop(E e) {
+	public void placeCardOnTop(CardType e) {
 		stack.add(e);
 	}
 
-	public void fill(ArrayList<E> createDeck) {
+	public void fill(ArrayList<CardType> createDeck) {
 		stack.addAll(createDeck);
 	}
 

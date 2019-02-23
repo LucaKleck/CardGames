@@ -7,13 +7,15 @@ import java.net.InetAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
 import javax.swing.Timer;
 
 import core.Player;
 import net.miginfocom.swing.MigLayout;
-import javax.swing.JLabel;
+import uno.UnoCard;
+import uno.UnoPlayingField;
 
 public class UnoPlayingFieldPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
@@ -73,7 +75,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 		btnRed.setBackground(Color.RED);
 		btnRed.addActionListener(e -> {
 			
-			if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 12 || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 14) {
+			if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_WILD || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_DRAW_FOUR) {
 				color.set(0);
 			} else {
 				color.set(-1);
@@ -85,7 +87,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 		btnBlue.setBackground(Color.BLUE);
 		btnBlue.addActionListener(e -> {
 			
-			if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 12 || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 14) {
+			if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_WILD || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_DRAW_FOUR) {
 				color.set(1);
 			} else {
 				color.set(-1);
@@ -97,7 +99,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 		btnGreen.setBackground(Color.GREEN);
 		btnGreen.addActionListener(e -> {
 			
-			if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 12 || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 14) {
+			if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_WILD || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_DRAW_FOUR) {
 				color.set(2);
 			} else {
 				color.set(-1);
@@ -108,7 +110,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 		btnYellow.setBackground(Color.YELLOW);
 		btnYellow.addActionListener(e -> {
 			
-			if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 12 || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == 14) {
+			if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_WILD || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_DRAW_FOUR) {
 				color.set(3);
 			} else {
 				color.set(-1);
@@ -179,7 +181,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 		color.set(-1);
 		colorPanel.setVisible(true);
 		while(color.get() == -1) {
-			System.out.print("WAIT");
+			System.out.print("");
 		}
 		colorPanel.setVisible(false);
 		return color.get();
@@ -190,7 +192,16 @@ public class UnoPlayingFieldPanel extends JPanel {
 	}
 	
 	private void updateText() {
-		textPaneInfo.setText("You are: "+unoPlayingField.getPlayer()+"\n Current Player: "+unoPlayingField.getCurrentPlayer().getPlayerName());
+		try {
+			textPaneInfo.setText("You are: "+unoPlayingField.getPlayer()+"\n Current Player: "+unoPlayingField.getCurrentPlayer().getPlayerName()+"\n NextPlayer: "+unoPlayingField.getNextPlayer(unoPlayingField.getCurrentPlayer()).getPlayerName());
+		} catch(NullPointerException e) {
+			try {
+				textPaneInfo.setText("You are: "+unoPlayingField.getPlayer()+"\n Current Player: "+unoPlayingField.getCurrentPlayer().getPlayerName());
+			} catch (Exception e2) {
+				textPaneInfo.setText("ERROR WHILE READING FROM HOST");
+			}
+			
+		}
 	}
 
 	public UnoPlayingField getUnoSpielfeld() {
