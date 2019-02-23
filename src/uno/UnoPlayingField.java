@@ -477,7 +477,7 @@ public class UnoPlayingField implements Serializable {
 				|| (currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) ) {
 			return true;
 		}
-		if(uCard.getColor() == currentCard.getColor() && !(uCard.getCardId() == UnoCard.CARD_DRAW_FOUR || uCard.getCardId() == UnoCard.CARD_DRAW_TWO) && (currentCard.getCardId() == UnoCard.CARD_DRAW_FOUR || currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) {
+		if(uCard.getColor() == currentCard.getColor() && drawCardStackNumber > 0 && !(uCard.getCardId() == UnoCard.CARD_DRAW_FOUR || uCard.getCardId() == UnoCard.CARD_DRAW_TWO) && (currentCard.getCardId() == UnoCard.CARD_DRAW_FOUR || currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) {
 			return false;
 		}
 		// General statement for other cases
