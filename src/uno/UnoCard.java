@@ -18,7 +18,7 @@ public class UnoCard extends Card {
 	private static int cardCount = 0;
 	
 	public static final int CARD_WIDTH = 150;
-	public static final int CARD_HEIGHT = 300;
+	public static final int CARD_HEIGHT = 250;
 	
 	public static final int COLOR_RED = 0;
 	public static final int COLOR_BLUE = 1;

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 import uno.UnoPlayingField.ClientCommands;
 
-public class PlayerHand implements Serializable {
+public class UnoPlayerHand implements Serializable {
 	/**
 	 * PlayerHand
 	 */
@@ -18,7 +18,7 @@ public class PlayerHand implements Serializable {
 	private ArrayList<UnoCard> playerCards = new ArrayList<>();
 	private UnoCard selectedCard = null; 
 	
-	public PlayerHand(UnoPlayingField unoPlayingField) {
+	public UnoPlayerHand(UnoPlayingField unoPlayingField) {
 		nrOfHands++;
 		playerNumber = nrOfHands;
 		drawStartHand(unoPlayingField);

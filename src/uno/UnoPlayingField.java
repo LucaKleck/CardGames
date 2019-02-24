@@ -39,7 +39,7 @@ public class UnoPlayingField implements Serializable {
 	private static ServerSocket server; // TODO change to lobby or something
 
 	private PropertyChangeSupport propertyChangeSupport;
-	private LinkedList< PlayerInfoPair > players = new LinkedList<>();
+	private LinkedList<PlayerInfoPair<UnoPlayerHand>> players = new LinkedList<>();
 	private Player player;
 	private CardDeck<UnoCard> cardDeck;
 	private ArrayList<UnoCard> placedCards = new ArrayList<UnoCard>();
@@ -109,6 +109,37 @@ public class UnoPlayingField implements Serializable {
 		
 	}
 	
+	@SuppressWarnings("unchecked")
+	public LinkedList<PlayerInfoPair<UnoPlayerHand>> getPlayerList() {
+		if(isClient) {
+			LinkedList< PlayerInfoPair<UnoPlayerHand> > serverPlayers = null;
+			try {
+				Socket clientSocket = null;
+				ObjectOutputStream clientOos = null;
+				ObjectInputStream clientOis = null;
+				
+				clientSocket = new Socket(host.getHostName(), PORT);
+				clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
+				clientOis = new ObjectInputStream(clientSocket.getInputStream());
+				
+				clientOos.writeObject(ClientCommands.getPlayerList);
+				serverPlayers = (LinkedList<PlayerInfoPair<UnoPlayerHand>>) clientOis.readObject();
+				
+				clientOos.flush();
+				
+				clientOis.close();
+				clientOos.close();
+				clientSocket.close();
+				
+			} catch (ClassNotFoundException | IOException e) {
+				e.printStackTrace();
+			}
+			return serverPlayers;
+		} else {
+			return players;
+		}
+	}
+	
 	public UnoCard getCurrentCard() {
 		if(isClient) {
 			UnoCard serverCard = null;
@@ -170,8 +201,8 @@ public class UnoPlayingField implements Serializable {
 		}
 	}
 	
-	public PlayerHand getPlayerHand(Player p) {
-		PlayerHand hand = null;
+	public UnoPlayerHand getPlayerHand(Player p) {
+		UnoPlayerHand hand = null;
 		if(isClient) {
 			try {
 				Socket clientSocket = null;
@@ -185,7 +216,7 @@ public class UnoPlayingField implements Serializable {
 				clientOos.writeObject(ClientCommands.getPlayerHand);
 				clientOos.writeObject(p);
 				
-				hand = (PlayerHand) clientOis.readObject();
+				hand = (UnoPlayerHand) clientOis.readObject();
 				
 				clientOos.flush();
 				
@@ -198,7 +229,7 @@ public class UnoPlayingField implements Serializable {
 			}
 			return hand;
 		} else {
-			for(PlayerInfoPair pair : players) {
+			for(PlayerInfoPair<UnoPlayerHand> pair : players) {
 				if (pair.getPlayer().equals(p)) {
 					hand = pair.getHand();
 				}
@@ -458,7 +489,7 @@ public class UnoPlayingField implements Serializable {
 			}
 		} else {
 			if(isReverse) {
-				for(ListIterator<PlayerInfoPair> iterator = players.listIterator(0); iterator.hasNext();) {
+				for(ListIterator<PlayerInfoPair<UnoPlayerHand>> iterator = players.listIterator(0); iterator.hasNext();) {
 					if (p.equals(iterator.next().getPlayer())) {
 						if(iterator.hasPrevious()) {
 							nextPlayer = iterator.previous().getPlayer();
@@ -469,7 +500,7 @@ public class UnoPlayingField implements Serializable {
 					}
 				}
 			} else {
-				for(Iterator<PlayerInfoPair> iterator = players.iterator(); iterator.hasNext(); ) {
+				for(Iterator<PlayerInfoPair<UnoPlayerHand>> iterator = players.iterator(); iterator.hasNext(); ) {
 					if (p.equals(iterator.next().getPlayer())) {
 						if(iterator.hasNext()) {
 							nextPlayer = iterator.next().getPlayer();
@@ -554,9 +585,9 @@ public class UnoPlayingField implements Serializable {
 	 * @param p - player you'd like to add
 	 */
 	public synchronized void addPlayer(Player p) {
-		PlayerInfoPair pair = getPlayerInfoPair(p);
+		PlayerInfoPair<UnoPlayerHand> pair = getPlayerInfoPair(p);
 		if(pair == null) {
-			players.add(new PlayerInfoPair(p, new PlayerHand(this)));
+			players.add(new PlayerInfoPair<UnoPlayerHand>(p, new UnoPlayerHand(this)));
 		}
 	}
 	
@@ -565,6 +596,7 @@ public class UnoPlayingField implements Serializable {
 	 * @param p - player you wish to remove
 	 */
 	public synchronized void removePlayer(Player p) {
+		if(p.equals(currentPlayer)) currentPlayer = getNextPlayer(currentPlayer);
 		players.remove(getPlayerInfoPair(p));
 	}
 	/**
@@ -572,8 +604,8 @@ public class UnoPlayingField implements Serializable {
 	 * @param p - player to match
 	 * @return returns the matching PlayerInfoPair or null if there is no match
 	 */
-	private synchronized PlayerInfoPair getPlayerInfoPair(Player p) {
-		for(PlayerInfoPair pair : players) {
+	private synchronized PlayerInfoPair<UnoPlayerHand> getPlayerInfoPair(Player p) {
+		for(PlayerInfoPair<UnoPlayerHand> pair : players) {
 			if (pair.getPlayer().equals(p)) {
 				return pair;
 			}
@@ -620,6 +652,7 @@ public class UnoPlayingField implements Serializable {
 					if(instruction == ClientCommands.placeCard) {
 						placeCard((UnoCard) ois.readObject(), (Player) ois.readObject());
 					}
+					
 					// Server getter
 					if(instruction == ClientCommands.getCurrentCard) {
 						UnoCard serverCard = getCurrentCard();
@@ -634,8 +667,8 @@ public class UnoPlayingField implements Serializable {
 					}
 					if(instruction == ClientCommands.getPlayerHand) {
 						Player p = (Player) ois.readObject();
-						PlayerHand serverPlayerHand = null;
-						for(PlayerInfoPair pair : players) {
+						UnoPlayerHand serverPlayerHand = null;
+						for(PlayerInfoPair<UnoPlayerHand> pair : players) {
 							if (pair.getPlayer().equals(p)) {
 								serverPlayerHand = pair.getHand();
 							}
@@ -650,11 +683,15 @@ public class UnoPlayingField implements Serializable {
 						Player p = getNextPlayer((Player) ois.readObject());
 						oos.writeObject(p);
 					}
+					if(instruction == ClientCommands.getPlayerList) {
+						oos.writeObject(players);
+					}
+					
 					// Server setter
 					if(instruction == ClientCommands.setPlayerHandSelectedCard) {
 						Player sender = (Player) ois.readObject();
 						UnoCard toBeSelectedUnoCard = (UnoCard) ois.readObject();
-						PlayerHand serverPlayerHand = null;
+						UnoPlayerHand serverPlayerHand = null;
 						serverPlayerHand = getPlayerInfoPair(sender).getHand();
 						serverPlayerHand.setSelectedCard(toBeSelectedUnoCard);
 					}
@@ -689,6 +726,7 @@ public class UnoPlayingField implements Serializable {
 		setPlayerHandSelectedCard,
 		
 		// getter
+		getPlayerList,
 		getSelectedCard,
 		getPlayerHand,
 		getCurrentPlayer,

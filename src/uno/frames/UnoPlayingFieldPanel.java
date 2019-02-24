@@ -23,27 +23,29 @@ public class UnoPlayingFieldPanel extends JPanel {
 	private Player client;
 	
 	private CardFieldPanel lastCardsField;
-	private PlayerPanel playerHandPanel;
+	private UnoPlayerPanel playerHandPanel;
 	private JTextPane textPaneInfo;
 	private JButton btnDrawCard;
-	private AtomicInteger color = new AtomicInteger(-1); // -1 = wait for color pick
+	private AtomicInteger color = new AtomicInteger(-1); // -1 == wait for color pick
 	private JButton btnRed;
 	private JButton btnBlue;
 	private JButton btnGreen;
 	private JButton btnYellow;
 
+	private JLabel lblColorInfo;
+	private JPanel colorPanel;
+	private UnoPlayerInfoPanel unoPlayerInfoPanel;
 	
 	private Timer t = new Timer(5000, e-> {
 		lastCardsField.updateField();
 		playerHandPanel.updateField();
 		updateText();
+		unoPlayerInfoPanel.updateContent();
 		
 		if(unoPlayingField.getCurrentPlayer().equals(client))
 		
 		validate();
 	}); 
-	private JLabel lblColorInfo;
-	private JPanel colorPanel;
 	
 	public UnoPlayingFieldPanel(Player clientPlayer, boolean isClient, InetAddress hostIP) {
 		this.client = clientPlayer;
@@ -65,16 +67,19 @@ public class UnoPlayingFieldPanel extends JPanel {
 		this.setBackground(Color.WHITE);
 		
 		unoPlayingField.addPropertyChangeListener(new CardChangeListener());
-		setLayout(new MigLayout("insets 0 0 0 0, gap 0px", "[80%,fill][20%,grow,fill]", "[32.5%:32.5%:32.5%,grow,fill][32.5%:32.5%:32.5%,grow,fill][17.5%:17.5%:17.5%,fill][17.5%:17.5%:17.5%,fill]"));
+		setLayout(new MigLayout("insets 0 0 0 0, gap 0px", "[60%,fill][20%:n,grow][20%,grow,fill]", "[32.5%:32.5%:32.5%,grow,fill][32.5%:32.5%:32.5%,grow,fill][17.5%:17.5%:17.5%,fill][17.5%:17.5%:17.5%,fill]"));
 		
 		textPaneInfo = new JTextPane();
 		updateText();
+		
+		unoPlayerInfoPanel = new UnoPlayerInfoPanel(unoPlayingField);
+		add(unoPlayerInfoPanel, "cell 1 0 1 4,grow");
 		textPaneInfo.setEditable(false);
-		add(textPaneInfo, "flowy,cell 1 0,grow");
+		add(textPaneInfo, "flowy,cell 2 0,grow");
 		
 		colorPanel = new JPanel();
 		colorPanel.setVisible(false);
-		add(colorPanel, "cell 1 1,grow");
+		add(colorPanel, "cell 2 1,grow");
 		colorPanel.setLayout(new MigLayout("", "[50%,fill][50%,fill]", "[33%][33%][33%]"));
 		
 		btnRed = new JButton("Red");
@@ -131,7 +136,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 		
 		
 		// Other Panels
-		playerHandPanel = new PlayerPanel(clientPlayer, unoPlayingField);
+		playerHandPanel = new UnoPlayerPanel(clientPlayer, unoPlayingField);
 		playerHandPanel.setBackground(Color.GRAY);
 		add(playerHandPanel, "cell 0 2 1 2,alignx left,aligny top");
 			
@@ -141,10 +146,10 @@ public class UnoPlayingFieldPanel extends JPanel {
 		
 		JButton btnPlaySelectedCard = new JButton("Play Card");
 		btnPlaySelectedCard.setBounds(120, 30, 120, 20);
-		this.add(btnPlaySelectedCard, "cell 1 2,alignx left,growy");
+		this.add(btnPlaySelectedCard, "cell 2 2,alignx left,growy");
 		
 		btnDrawCard = new JButton("Draw Card");
-		add(btnDrawCard, "cell 1 3");
+		add(btnDrawCard, "cell 2 3");
 		/*
 		 * Creates Runnable that will be run on button press
 		 * plays currently selected card and if it's a wild/+4 card waits until the player selected a color
@@ -235,6 +240,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 					lastCardsField.updateField();
 					updateText();
 					validate();
+					unoPlayerInfoPanel.updateContent();
 				}
 			}
 			if(evt.getPropertyName().matches("Change")) {
@@ -242,6 +248,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 					lastCardsField.updateField();
 					updateText();
 					validate();
+					unoPlayerInfoPanel.updateContent();
 				}
 			}
 		}

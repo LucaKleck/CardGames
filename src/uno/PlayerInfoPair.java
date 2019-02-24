@@ -1,12 +1,16 @@
 package uno;
 
+import java.io.Serializable;
+
 import core.Player;
 
-public class PlayerInfoPair {
+public class PlayerInfoPair<PlayerHand> implements Serializable {
+	private static final long serialVersionUID = 5079256780845609869L;
+	
 	private Player player;
-	private PlayerHand playerHand;
+	private UnoPlayerHand playerHand;
 
-	public PlayerInfoPair(Player p, PlayerHand playerHand) {
+	public PlayerInfoPair(Player p, UnoPlayerHand playerHand) {
 		this.player = p;
 		this.playerHand = playerHand;
 	}
@@ -15,7 +19,7 @@ public class PlayerInfoPair {
 		return player;
 	}
 
-	public PlayerHand getHand() {
+	public UnoPlayerHand getHand() {
 		return playerHand;
 	}
 

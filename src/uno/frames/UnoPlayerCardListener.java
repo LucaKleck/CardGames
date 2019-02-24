@@ -5,19 +5,19 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
-import uno.PlayerHand;
+import uno.UnoPlayerHand;
 import uno.UnoCard;
 import uno.UnoPlayingField;
 
-public class PlayerCardListener implements MouseListener {
+public class UnoPlayerCardListener implements MouseListener {
 	private PropertyChangeSupport propertyChangeSupport;
 	private Boolean selectedCardFlag = false;
 	private UnoCard unoCard;
-	private PlayerHand playerHand;
-	private PlayerPanel playerPanel;
+	private UnoPlayerHand playerHand;
+	private UnoPlayerPanel playerPanel;
 	private UnoPlayingField unoSpielfeld;
 
-	public PlayerCardListener(UnoCard unoCard, PlayerHand playerHand, UnoPlayingField unoSpielfeld, PlayerCardChangeListener cl, PlayerPanel playerPanel) {
+	public UnoPlayerCardListener(UnoCard unoCard, UnoPlayerHand playerHand, UnoPlayingField unoSpielfeld, UnoPlayerCardChangeListener cl, UnoPlayerPanel playerPanel) {
 		this.propertyChangeSupport = new PropertyChangeSupport(this);
 		this.playerPanel = playerPanel;
 		this.unoCard = unoCard;

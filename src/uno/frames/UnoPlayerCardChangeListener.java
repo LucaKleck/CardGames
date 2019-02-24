@@ -2,10 +2,10 @@ package uno.frames;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-public class PlayerCardChangeListener implements PropertyChangeListener {
-	private PlayerPanel playerHandPanel;
+public class UnoPlayerCardChangeListener implements PropertyChangeListener {
+	private UnoPlayerPanel playerHandPanel;
 	
-	public PlayerCardChangeListener(PlayerPanel playerHandPanel) {
+	public UnoPlayerCardChangeListener(UnoPlayerPanel playerHandPanel) {
 		this.playerHandPanel = playerHandPanel;
 	}
 	
