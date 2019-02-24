@@ -388,7 +388,7 @@ public class UnoPlayingField implements Serializable {
 				isReverse = !isReverse;
 			}
 			if(currentCard.getCardId() == 10) {
-				getNextPlayer(currentPlayer);
+				currentPlayer = getNextPlayer(currentPlayer);
 			}
 			if(currentCard.getCardId() == 13) {
 				drawCardStackNumber += 2;
@@ -400,6 +400,7 @@ public class UnoPlayingField implements Serializable {
 			currentPlayer = getNextPlayer(currentPlayer);
 			propertyChangeSupport.getPropertyChangeListeners()[0].propertyChange(new PropertyChangeEvent(this, "PlacedCardFlag", oldPlacedCardFlag, placedCardFlag));
 		}
+		hasDrawn = false;
 		return true;
 	}
 	
@@ -497,6 +498,12 @@ public class UnoPlayingField implements Serializable {
 		if(uCard.getColor() == currentCard.getColor() && drawCardStackNumber > 0 && !(uCard.getCardId() == UnoCard.CARD_DRAW_FOUR || uCard.getCardId() == UnoCard.CARD_DRAW_TWO) && (currentCard.getCardId() == UnoCard.CARD_DRAW_FOUR || currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) {
 			return false;
 		}
+		// if player plays wild and there is no +4 / +2 card
+		if(uCard.getCardId() == UnoCard.CARD_WILD && // If it's a draw two card and there is a draw four on the field || Might not be in the real game
+				!(currentCard.getCardId() == UnoCard.CARD_DRAW_FOUR 
+				|| (currentCard.getCardId() == UnoCard.CARD_DRAW_TWO) ) ) {
+			return true;
+		}
 		// General statement for other cases
 		// if the number/symbol on the card is the same the card can be placed
 		if(uCard.getCardId() == currentCard.getCardId()) {
@@ -512,7 +519,7 @@ public class UnoPlayingField implements Serializable {
 	 * @return the array list of all currently placed cards
 	 */
 	@SuppressWarnings("unchecked")
-	public ArrayList<UnoCard> getplacedUnoCards() {
+	public synchronized ArrayList<UnoCard> getplacedUnoCards() {
 		if(isClient) {
 			ArrayList<UnoCard> pc = new ArrayList<UnoCard>();
 			try {

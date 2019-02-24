@@ -20,6 +20,8 @@ import uno.UnoPlayingField;
 public class UnoPlayingFieldPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 	private UnoPlayingField unoPlayingField;
+	private Player client;
+	
 	private CardFieldPanel lastCardsField;
 	private PlayerPanel playerHandPanel;
 	private JTextPane textPaneInfo;
@@ -35,11 +37,16 @@ public class UnoPlayingFieldPanel extends JPanel {
 		lastCardsField.updateField();
 		playerHandPanel.updateField();
 		updateText();
+		
+		if(unoPlayingField.getCurrentPlayer().equals(client))
+		
 		validate();
 	}); 
 	private JLabel lblColorInfo;
 	private JPanel colorPanel;
+	
 	public UnoPlayingFieldPanel(Player clientPlayer, boolean isClient, InetAddress hostIP) {
+		this.client = clientPlayer;
 		if(!isClient) {
 			try {
 				this.unoPlayingField = new UnoPlayingField(clientPlayer);
@@ -154,8 +161,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 						
 						if(unoPlayingField.getSelectedCard(clientPlayer) != null) {
 							if(unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_WILD || unoPlayingField.getSelectedCard(clientPlayer).getCardId() == UnoCard.CARD_DRAW_FOUR) {
-								System.out.println("ALERT");
-								System.out.println(waitForColorPick());
+								waitForColorPick();
 								unoPlayingField.setCardColor(clientPlayer, color.get());
 								try {
 									Thread.sleep(100);
