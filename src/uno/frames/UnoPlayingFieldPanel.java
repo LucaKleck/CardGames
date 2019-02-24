@@ -169,7 +169,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 								waitForColorPick();
 								unoPlayingField.setCardColor(clientPlayer, color.get());
 								try {
-									Thread.sleep(100);
+									Thread.sleep(200);
 								} catch (InterruptedException e) {
 								}
 							}
