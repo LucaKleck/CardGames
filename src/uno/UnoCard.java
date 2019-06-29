@@ -169,4 +169,5 @@ public class UnoCard extends Card {
 		Collections.shuffle(cardList);
 		return cardList;
 	}
+	
 }

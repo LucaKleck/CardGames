@@ -1,12 +1,10 @@
 package uno;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.net.Socket;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
-import uno.UnoPlayingField.ClientCommands;
+import core.Client;
+import core.Server.ServerCommands;
 
 public class UnoPlayerHand implements Serializable {
 	/**
@@ -44,35 +42,18 @@ public class UnoPlayerHand implements Serializable {
 		return toBePlayed;
 	}
 
-	public void setSelectedCard(UnoCard selectedCard, UnoPlayingField unoPlayingField) {
-		if(unoPlayingField.isClient()) {
-			Socket clientSocket = null;
-			ObjectOutputStream clientOos = null;
-			ObjectInputStream clientOis = null;
-			
-			try {
-			clientSocket = new Socket(unoPlayingField.host.getHostName(), UnoPlayingField.PORT);
-			
-			clientOos = new ObjectOutputStream(clientSocket.getOutputStream());
-			clientOis = new ObjectInputStream(clientSocket.getInputStream());
-			
-			clientOos.writeObject(ClientCommands.setPlayerHandSelectedCard);
-			clientOos.writeObject(unoPlayingField.getPlayer());
-			clientOos.writeObject(selectedCard);
-			
-			clientOis.close();
-			clientOos.close();
-			clientSocket.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+	public UnoCard setSelectedCard(UnoCard selectedCard, UnoPlayingField unoPlayingField) {
+		if(unoPlayingField.getPlayer().isClient) {
+			LinkedList<Object> data = new LinkedList<Object>();
+			data.add(selectedCard);
+			setSelectedCard((UnoCard) Client.clientObject.createServerRequest(ServerCommands.setPlayerHandSelectedCard, data).data.get(0));
 		} else {
 			setSelectedCard(selectedCard);
 		}
-		
+		return selectedCard;
 	}
 	
-	public void setSelectedCard(UnoCard selectedCard) {
+	public UnoCard setSelectedCard(UnoCard selectedCard) {
 		if(!playerCards.contains(selectedCard)) {
 			for(UnoCard card : playerCards) {
 				if(card.equals(selectedCard)) {
@@ -87,7 +68,7 @@ public class UnoPlayerHand implements Serializable {
 			playerCards.add(this.selectedCard);
 		}
 		this.selectedCard = selectedCard;
-		
+		return selectedCard;
 	}
 	
 	public int getPlayerNumber() {

@@ -25,9 +25,9 @@ public class CardFieldPanel extends JScrollPane {
 		GraphicUnoCard graphicUnoCard = new GraphicUnoCard(unoSpielfeld.getCurrentCard());
 		viewport.add(graphicUnoCard, "cell 0 0,alignx center,aligny top");
 		
-		for(int i = 0; i < unoSpielfeld.getplacedUnoCards().size(); i++) {
+		for(int i = 0; i < unoSpielfeld.getPlacedCards().size(); i++) {
 			try {
-				viewport.add(new GraphicUnoCard(unoSpielfeld.getplacedUnoCards().get(i)), "cell "+(unoSpielfeld.getplacedUnoCards().size()-i-1)+" 1");
+				viewport.add(new GraphicUnoCard(unoSpielfeld.getPlacedCards().get(i)), "cell "+(unoSpielfeld.getPlacedCards().size()-i-1)+" 1");
 			} catch (NullPointerException e) {
 			}
 		}		

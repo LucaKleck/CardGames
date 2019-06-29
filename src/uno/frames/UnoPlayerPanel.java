@@ -6,6 +6,7 @@ import javax.swing.JScrollPane;
 import core.Player;
 import net.miginfocom.swing.MigLayout;
 import uno.UnoCard;
+import uno.UnoPlayerHand;
 import uno.UnoPlayingField;
 
 public class UnoPlayerPanel extends JScrollPane {
@@ -26,14 +27,15 @@ public class UnoPlayerPanel extends JScrollPane {
 	}
 
 	private void addComponents() {
-		if(unoSpielfeld.getPlayerHand(player) == null) return;
-		GraphicUnoCard graphicUnoCard = new GraphicUnoCard(unoSpielfeld.getPlayerHand(player).getSelectedCard());
+		UnoPlayerHand uph = unoSpielfeld.getPlayerHand(player);
+		if(uph == null) return;
+		
+		GraphicUnoCard graphicUnoCard = new GraphicUnoCard(uph.getSelectedCard());
 		viewport.add(graphicUnoCard, "cell 0 0,alignx center,aligny top");
 		viewport.add(new JLabel("Selected Card"), "cell 0 1,alignx center,aligny top");
-		
-		for(int i = 0; i < unoSpielfeld.getPlayerHand(player).getPlayerCards().size(); i++) {
-			GraphicUnoCard graphicUnoCard2 = new GraphicUnoCard(unoSpielfeld.getPlayerHand(player).getPlayerCards().get(i));
-			graphicUnoCard2.addMouseListener( new UnoPlayerCardListener(unoSpielfeld.getPlayerHand(player).getPlayerCards().get(i), unoSpielfeld.getPlayerHand(player), unoSpielfeld, new UnoPlayerCardChangeListener(this), this ));
+		for(int i = 0; i < uph.getPlayerCards().size(); i++) {
+			GraphicUnoCard graphicUnoCard2 = new GraphicUnoCard(uph.getPlayerCards().get(i));
+			graphicUnoCard2.addMouseListener( new UnoPlayerCardListener(uph.getPlayerCards().get(i), uph, unoSpielfeld, this ));
 			viewport.add(graphicUnoCard2, "cell "+(i+1)+" 0");
 		}
 	}

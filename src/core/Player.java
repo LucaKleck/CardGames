@@ -1,5 +1,6 @@
 package core;
 import java.io.Serializable;
+import java.net.InetAddress;
 
 public class Player implements Serializable {
 	/**
@@ -7,14 +8,14 @@ public class Player implements Serializable {
 	 */
 	private static final long serialVersionUID = 5207847101051209828L;
 	
-	private String playerName;
+	public final String playerName;
+	public final InetAddress playerAddress;
+	public final boolean isClient;
 	
-	public Player(String playerName) {
+	public Player(String playerName, InetAddress playerAddress, boolean isClient) {
 		this.playerName = playerName;
-	}
-
-	public synchronized String getPlayerName() {
-		return playerName;
+		this.playerAddress = playerAddress;
+		this.isClient = isClient;
 	}
 
 	@Override
@@ -25,7 +26,7 @@ public class Player implements Serializable {
 	@Override
 	public boolean equals(Object obj) {
 		if(obj instanceof Player) {
-			if(((Player) obj).getPlayerName().matches(playerName)) return true;
+			if( ((Player) obj).playerName.matches(playerName) && ((Player) obj).playerAddress.equals(playerAddress)) return true;
 		}
 		return super.equals(obj);
 	}

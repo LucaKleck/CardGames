@@ -2,8 +2,6 @@ package uno.frames;
 import java.awt.Color;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.IOException;
-import java.net.InetAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.JButton;
@@ -13,6 +11,7 @@ import javax.swing.JTextPane;
 import javax.swing.Timer;
 
 import core.Player;
+import core.frames.PlayerInfoPanel;
 import net.miginfocom.swing.MigLayout;
 import uno.UnoCard;
 import uno.UnoPlayingField;
@@ -34,7 +33,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 
 	private JLabel lblColorInfo;
 	private JPanel colorPanel;
-	private UnoPlayerInfoPanel unoPlayerInfoPanel;
+	private PlayerInfoPanel unoPlayerInfoPanel;
 	
 	private Timer t = new Timer(5000, e-> {
 		lastCardsField.updateField();
@@ -47,23 +46,9 @@ public class UnoPlayingFieldPanel extends JPanel {
 		validate();
 	}); 
 	
-	public UnoPlayingFieldPanel(Player clientPlayer, boolean isClient, InetAddress hostIP) {
+	public UnoPlayingFieldPanel(Player clientPlayer) {
 		this.client = clientPlayer;
-		if(!isClient) {
-			try {
-				this.unoPlayingField = new UnoPlayingField(clientPlayer);
-			} catch (ClassNotFoundException | IOException e1) {
-				e1.printStackTrace();
-				System.exit(0);
-			}
-		} else {
-			try {
-				this.unoPlayingField = new UnoPlayingField(clientPlayer, hostIP);
-			} catch (ClassNotFoundException | IOException | InterruptedException e1) {
-				e1.printStackTrace();
-				System.exit(0);
-			}
-		}
+		this.unoPlayingField = new UnoPlayingField(clientPlayer);
 		this.setBackground(Color.WHITE);
 		
 		unoPlayingField.addPropertyChangeListener(new CardChangeListener());
@@ -72,7 +57,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 		textPaneInfo = new JTextPane();
 		updateText();
 		
-		unoPlayerInfoPanel = new UnoPlayerInfoPanel(unoPlayingField);
+		unoPlayerInfoPanel = new PlayerInfoPanel(unoPlayingField);
 		add(unoPlayerInfoPanel, "cell 1 0 1 4,grow");
 		textPaneInfo.setEditable(false);
 		add(textPaneInfo, "flowy,cell 2 0,grow");
@@ -216,10 +201,10 @@ public class UnoPlayingFieldPanel extends JPanel {
 	
 	private void updateText() {
 		try {
-			textPaneInfo.setText("You are: "+unoPlayingField.getPlayer()+"\n Current Player: "+unoPlayingField.getCurrentPlayer().getPlayerName()+"\n NextPlayer: "+unoPlayingField.getNextPlayer(unoPlayingField.getCurrentPlayer()).getPlayerName());
+			textPaneInfo.setText("You are: "+unoPlayingField.getPlayer()+"\n Current Player: "+unoPlayingField.getCurrentPlayer().playerName+"\n NextPlayer: "+unoPlayingField.getNextPlayer(unoPlayingField.getCurrentPlayer()).playerName);
 		} catch(NullPointerException e) {
 			try {
-				textPaneInfo.setText("You are: "+unoPlayingField.getPlayer()+"\n Current Player: "+unoPlayingField.getCurrentPlayer().getPlayerName());
+				textPaneInfo.setText("You are: "+unoPlayingField.getPlayer()+"\n Current Player: "+unoPlayingField.getCurrentPlayer().playerName);
 			} catch (Exception e2) {
 				textPaneInfo.setText("ERROR WHILE READING FROM HOST");
 			}
@@ -235,7 +220,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 
 		@Override
 		public void propertyChange(PropertyChangeEvent evt) {
-			if(evt.getPropertyName().matches("PlacedCardFlag")) {
+			if(evt.getPropertyName().matches(UnoPlayingField.PLACED_CARD_FLAG)) {
 				if(((Boolean) evt.getNewValue()).booleanValue() == true) {
 					lastCardsField.updateField();
 					updateText();
@@ -243,7 +228,7 @@ public class UnoPlayingFieldPanel extends JPanel {
 					unoPlayerInfoPanel.updateContent();
 				}
 			}
-			if(evt.getPropertyName().matches("Change")) {
+			if(evt.getPropertyName().matches(UnoPlayingField.CHANGE_FLAG)) {
 				if(((Boolean) evt.getNewValue()).booleanValue() == true) {
 					lastCardsField.updateField();
 					updateText();

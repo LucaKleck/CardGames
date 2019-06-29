@@ -1,17 +1,19 @@
 package core.frames;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Random;
 
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import core.Lobby;
 import core.Player;
 import net.miginfocom.swing.MigLayout;
 import uno.frames.UnoPlayingFieldPanel;
-
-import javax.swing.JLabel;
 
 public class MainMenuPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
@@ -22,7 +24,7 @@ public class MainMenuPanel extends JPanel {
 	private JTextField txtIP;
 
 	public MainMenuPanel(MainJFrame container) {
-		setLayout(new MigLayout("", "[150px,fill][95px,grow][95px]", "[23px][][100%][]"));
+		setLayout(new MigLayout("", "[]", "[]"));
 		
 		Random r = new Random();
 		
@@ -40,11 +42,21 @@ public class MainMenuPanel extends JPanel {
 		txtIP = new JTextField(35);
 		add(txtIP, "cell 1 0,alignx left");
 		
-		btnStartAsHost = new JButton("Start as Host");
+		btnStartAsHost = new JButton("Create Lobby");
 		btnStartAsHost.addActionListener(e -> {
+			// create lobby 
+			String ip = null;
+			try(final DatagramSocket socket = new DatagramSocket()){
+				  socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+				  ip = socket.getLocalAddress().getHostAddress();
+			} catch (SocketException | UnknownHostException e1) {
+				e1.printStackTrace();
+			}
 			try {
-				container.add(new UnoPlayingFieldPanel(new Player(txtUsername.getText()), false, getAddress()));
+				Player p = new Player(txtUsername.getText(), InetAddress.getByName(ip), false);
+				new Lobby(p);
 				container.remove(this);
+				container.add(new UnoPlayingFieldPanel(p));
 				container.revalidate();
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
@@ -52,11 +64,20 @@ public class MainMenuPanel extends JPanel {
 		});
 		add(btnStartAsHost, "cell 0 3,alignx left,aligny top");
 		
-		btnJoinAsClient = new JButton("Join as Client");
+		btnJoinAsClient = new JButton("Join Lobby");
 		btnJoinAsClient.addActionListener(e -> {
 			try {
-				container.add(new UnoPlayingFieldPanel(new Player(txtUsername.getText()), true, getAddress() ));
+				String ip = null;
+				try(final DatagramSocket socket = new DatagramSocket()){
+					  socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+					  ip = socket.getLocalAddress().getHostAddress();
+				} catch (SocketException | UnknownHostException e1) {
+					e1.printStackTrace();
+				}
+				Player p = new Player(txtUsername.getText(), InetAddress.getByName(ip), true);
+				new Lobby(p, getAddress());
 				container.remove(this);
+				container.add(new UnoPlayingFieldPanel(p));
 				container.revalidate();
 			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
