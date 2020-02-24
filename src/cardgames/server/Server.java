@@ -48,6 +48,14 @@ public class Server implements Runnable {
 		return clients;
 	}
 	
+	public ArrayList<Client> getClients(ClientRole cr) {
+		ArrayList<Client> clients = new ArrayList<Client>();
+		for(ClientHandler c : clientHandlers) {
+			if(cr == c.getRole()) clients.add(c.getClient());
+		}
+		return clients;
+	}
+	
 	
 	public Game getGame() {
 		return game;
@@ -87,6 +95,27 @@ public class Server implements Runnable {
 					clientHandler.sendServerOutputPackage(serverOutputPackage);
 				}
 			}
+		}
+	}
+	
+	/**
+	 * Sends to every Client
+	 * @param serverOutputPackage
+	 */
+	public void broadcastServerOutputPackage(ServerOutputPackage serverOutputPackage) {
+		for(ClientHandler clientHandler : clientHandlers) {
+			clientHandler.sendServerOutputPackage(serverOutputPackage);
+		}
+	}
+	
+	/**
+	 * Sends to every Client except origin
+	 * @param serverOutputPackage
+	 */
+	public void broadcastServerOutputPackage(ServerOutputPackage serverOutputPackage, Client origin) {
+		for(ClientHandler clientHandler : clientHandlers) {
+			if(clientHandler.getClient().equals(origin)) continue;
+			clientHandler.sendServerOutputPackage(serverOutputPackage);
 		}
 	}
 	

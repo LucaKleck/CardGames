@@ -12,9 +12,8 @@ public class ClientGameAction implements Serializable {
 	private GameActionType gat;
 	/**
 	 *  data example: <br>
-	 *   placeCard -> data = card <br>
+	 *   placeCard -> data = card & if card.color == WILD add color <br>
 	 *   drawCard -> data = null <br>
-	 *   setCardColor -> data = card + color (color is given in a Byte object)
 	 */
 	private ArrayList<Object> data;
 	

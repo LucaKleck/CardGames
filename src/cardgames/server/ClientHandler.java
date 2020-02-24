@@ -29,7 +29,7 @@ public class ClientHandler {
 		
 		this.clientSocket = clientSocket;
 		this.server = server;
-		role = ClientRole.player;
+		role = ClientRole.PLAYER;
 		
 		try {
 			outputStream = new ObjectOutputStream(clientSocket.getOutputStream());

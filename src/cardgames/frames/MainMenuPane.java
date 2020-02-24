@@ -30,7 +30,6 @@ public class MainMenuPane extends CustomContentPane {
 
 		createServer = new JButton("Create Server");
 		createServer.addActionListener(e -> {
-			// create lobby 
 			String ip = null;
 			try(final DatagramSocket socket = new DatagramSocket()){
 				  socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
@@ -62,6 +61,8 @@ public class MainMenuPane extends CustomContentPane {
 		});
 		exit = new JButton("Exit");
 		
+		add(txtUsername);
+		add(txtIP);
 		add(createServer);
 		add(joinServer);
 		add(exit);

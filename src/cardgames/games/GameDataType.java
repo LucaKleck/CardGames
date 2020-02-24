@@ -10,7 +10,8 @@ public enum GameDataType {
 	CURRENT_REVERSE,		// sends current reverse state
 	CURRENT_HAS_DRAWN,		// sends current has drawn state
 	PLACED_CARD, 			// sends card, next player, drawCardStackNumber, isReversed
-	REQ_PAIR,				// sends requested <Client, hand> pair 
+	REQ_PAIR,				// sends requested <Client, hand> pair
+	SYNCH_TO_SERVER,		// sends all important data
 	;
 	
 }
