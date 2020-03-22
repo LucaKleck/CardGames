@@ -10,7 +10,8 @@ public enum ServerCommands {
 	SHUTDOWN, 		// send shutdown to client
 	START_GAME,  	// send game start and game type (make clients start fake game)
 	SERVER_MESSAGE,	// send server information as chat message
-	SERVER_INFO
+	SERVER_INFO,	// send server info
+	CLIENT_LIST,	// send client list
 	// ask for data
 	
 	;

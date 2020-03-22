@@ -25,4 +25,9 @@ public class Pair<C extends Client, Hand> implements Serializable {
 	public void setHand(Hand hand) {
 		this.hand = hand;
 	}
+	
+	@Override
+	public String toString() {
+		return client.toString()+" "+hand.toString();
+	}
 }

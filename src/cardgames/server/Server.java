@@ -40,34 +40,42 @@ public class Server implements Runnable {
 		serverExecutorService.execute(this);
 	}
 	
-	public ArrayList<Client> getClients() {
+	public synchronized ArrayList<Client> getClients() {
 		ArrayList<Client> clients = new ArrayList<Client>();
 		for(ClientHandler c : clientHandlers) {
 			clients.add(c.getClient());
 		}
 		return clients;
 	}
-	
-	public ArrayList<Client> getClients(ClientRole cr) {
+	/**
+	 * Gets all clients with ClientRole cr
+	 * @param cr
+	 * @return
+	 */
+	public synchronized ArrayList<Client> getClients(ClientRole cr) {
 		ArrayList<Client> clients = new ArrayList<Client>();
 		for(ClientHandler c : clientHandlers) {
-			if(cr == c.getRole()) clients.add(c.getClient());
+			if(cr == c.getClient().getRole()) clients.add(c.getClient());
 		}
 		return clients;
 	}
 	
 	
-	public Game getGame() {
+	public synchronized Game getGame() {
 		return game;
 	}
 	
-	public ServerInfo getServerInfo() {
+	public synchronized ServerInfo getServerInfo() {
 		return serverInfo;
 	}
 	
 	public boolean startGame() {
-		game = GameFactory.createGame(serverInfo.getGameMode(), this, null);
-		if(game == null) return false;
+		game = GameFactory.createGame(serverInfo.getGameMode(), this, null,  null);
+		for(ClientHandler clientHandler : clientHandlers) {
+			ArrayList<Object> data = new ArrayList<Object>();
+			data.add(game.createSynchData(clientHandler.getClient()));
+			sendServerOutputPackage(new ServerOutputPackage(ServerCommands.START_GAME, data), clientHandler.getClient());
+		}
 		return true;
 	}
 	
@@ -78,6 +86,11 @@ public class Server implements Runnable {
 				Socket clientSocket = s.accept();
 				ClientHandler newClient = new ClientHandler(clientSocket, this);
 				clientHandlers.add(newClient);
+				// broadcast new arrival
+				ArrayList<Object> data;
+				data = new ArrayList<Object>();
+				data.add(getClients());
+				broadcastServerOutputPackage(new ServerOutputPackage(ServerCommands.CLIENT_LIST, data));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -89,12 +102,8 @@ public class Server implements Runnable {
 	 * @param serverOutputPackage
 	 */
 	public void multicastServerOutputPackage(ServerOutputPackage serverOutputPackage, ArrayList<Client> clientTargetList) {
-		for(ClientHandler clientHandler : clientHandlers) {
-			for(Client c : clientTargetList) {
-				if(c.equals(clientHandler.getClient())) {
-					clientHandler.sendServerOutputPackage(serverOutputPackage);
-				}
-			}
+		for(Client c : clientTargetList) {
+			sendServerOutputPackage(serverOutputPackage, c);
 		}
 	}
 	
@@ -119,10 +128,12 @@ public class Server implements Runnable {
 		}
 	}
 	
-	public void sendServerOutputPackage(ServerOutputPackage serverOutputPackage, Client target) {
-		ArrayList<Client> clientTargetList = new ArrayList<Client>();
-		clientTargetList.add(target);
-		multicastServerOutputPackage(serverOutputPackage, clientTargetList);
+	public synchronized void sendServerOutputPackage(ServerOutputPackage serverOutputPackage, Client target) {
+		for(ClientHandler clientHandler : clientHandlers) {
+			if(clientHandler.getClient().equals(target)) {
+				clientHandler.sendServerOutputPackage(serverOutputPackage);
+			}
+		}
 	}
 	
 }

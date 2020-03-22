@@ -1,7 +1,7 @@
 package cardgames.constants;
 
 public abstract class CardGamesConstants {
-	public static final int PORT = 27123;
+	public static final int PORT = 25565;
 	public static final int CARD_WIDTH = 150;
 	public static final int CARD_HEIGHT = 250;
 	

@@ -37,6 +37,7 @@ public class UnoCard extends Card {
 	@Override
 	public String toString() {
 		switch(cardId) {
+		case -1: return "";
 		case 10: return "Skip";
 		case 11: return "Reverse";
 		case 12: return "Wild";

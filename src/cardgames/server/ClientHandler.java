@@ -18,18 +18,14 @@ public class ClientHandler {
 	ObjectOutputStream outputStream;
 	
 	private Client client; 	// client will send his info
-	@SuppressWarnings("unused")
 	private Server server; 	// host server
-	private ClientRole role;// role will be assigned by server host default is player
 	
-	@SuppressWarnings("unchecked")
+	
 	public ClientHandler(Socket clientSocket, Server server) {
-
 		inputExecutor = Executors.newSingleThreadExecutor();
 		
 		this.clientSocket = clientSocket;
 		this.server = server;
-		role = ClientRole.PLAYER;
 		
 		try {
 			outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
@@ -41,7 +37,7 @@ public class ClientHandler {
 					ClientOutputPackage cop = (ClientOutputPackage) inputStream.readObject();
 					switch (cop.getCommand()) {
 					case CONNECT:
-						ArrayList<Object> data = (ArrayList<Object>) inputStream.readObject();
+						ArrayList<Object> data = cop.getData();
 						this.client = (Client) data.get(0);
 						ArrayList<Object> serverInfo = new ArrayList<Object>();
 						serverInfo.add(server.getServerInfo());
@@ -63,8 +59,9 @@ public class ClientHandler {
 		}
 	}
 	
-	public void sendServerOutputPackage(ServerOutputPackage serverOutputPackage) {
+	public synchronized void sendServerOutputPackage(ServerOutputPackage serverOutputPackage) {
 		try {
+			System.out.println("server sent["+client+"]: "+serverOutputPackage);
 			outputStream.writeObject(serverOutputPackage);
 			outputStream.flush();
 		} catch (IOException e) {
@@ -76,10 +73,6 @@ public class ClientHandler {
 		return client;
 	}
 
-	public ClientRole getRole() {
-		return role;
-	}
-
 	private class InputHandler implements Runnable {
 		private ObjectInputStream inputStream;
 		
@@ -89,27 +82,18 @@ public class ClientHandler {
 		
 		@Override
 		public void run() {
-			/*
-			 *  receive structure:
-			 *   1. get ClientCommands
-			 *   2. switch case to what to do
-			 *   3. unpack data act and flush connection
-			 *   4. wait for ClientCommands again
-			 */
 			
-			
-			/*
-			 * Example
-			 * Receive gameAction -> play action in server (and verify action) -> send to everyone
-			 * if action is invalid send client current game state
-			 */
 			while(!clientSocket.isClosed()) {
 				try {
 					ClientOutputPackage cop = (ClientOutputPackage) inputStream.readObject();
+					System.out.println("server received cop["+client+"]: "+cop);
 					switch (cop.getCommand()) {
 					case CHAT:
 						break;
 					case CLIENT_LIST:
+						ArrayList<Object> data1 = new ArrayList<Object>();
+						data1.add(server.getClients());
+						outputStream.writeObject(new ServerOutputPackage(ServerCommands.CLIENT_LIST, data1));
 						break;
 					case CONNECT:
 						break;
@@ -121,10 +105,9 @@ public class ClientHandler {
 					case RECONNECT:
 						break;
 					case SERVER_INFO:
-						ArrayList<Object> data = new ArrayList<Object>();
-						data.add(server.getServerInfo()); 	
-						outputStream.writeObject(new ServerOutputPackage(ServerCommands.SERVER_INFO, data));
-						
+						ArrayList<Object> data5 = new ArrayList<Object>();
+						data5.add(server.getServerInfo()); 	
+						outputStream.writeObject(new ServerOutputPackage(ServerCommands.SERVER_INFO, data5));
 						break;
 					case SET_ROLE:
 						break;
@@ -136,6 +119,7 @@ public class ClientHandler {
 					e.printStackTrace();
 				} catch (IOException e) {
 					e.printStackTrace();
+					System.exit(0);
 				}
 			}
 		}

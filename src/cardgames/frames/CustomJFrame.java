@@ -10,9 +10,10 @@ public class CustomJFrame extends JFrame {
 	public CustomJFrame() {
 		super("Card Game Collection");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		setSize(1280, 720);
 		setMinimumSize(new Dimension(1280, 720));
-		setContentPane(new MainMenuPane());
+		setPreferredSize(new Dimension(1280, 720));
+		setExtendedState( getExtendedState()|JFrame.MAXIMIZED_BOTH );
+		setContentPane(new CardPane());
 		pack();
 		setVisible(true);
 	}

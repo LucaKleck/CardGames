@@ -18,6 +18,7 @@ public class ServerInfo implements Serializable {
 	 */
 	public ServerInfo(String serverName) {
 		this.serverName = serverName;
+		gameMode = GameModes.UNO;
 	}
 
 	public String getServerName() {

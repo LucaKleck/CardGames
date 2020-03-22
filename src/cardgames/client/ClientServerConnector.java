@@ -1,5 +1,6 @@
 package cardgames.client;
 
+import java.awt.Component;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -10,23 +11,27 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import cardgames.constants.CardGamesConstants;
+import cardgames.frames.CustomContentPane;
 import cardgames.games.Game;
 import cardgames.games.GameData;
 import cardgames.games.GameFactory;
 import cardgames.server.ServerInfo;
 import cardgames.server.ServerOutputPackage;
 
-public class ClientServerConnector {
+public class ClientServerConnector extends Component {
+	private static final long serialVersionUID = 4431517395054507341L;
 	private ExecutorService inputExecutor;
 	private Socket clientSocket;
 	ObjectOutputStream outputStream;
 	
-	private ServerInfo localServerInfo;
 	private Client client;
 	private Game localGame;
 	@SuppressWarnings("unused")
 	private InetAddress serverAddress;
 	
+	// local data storage !!! PROPERTIES !!!
+	private ServerInfo localServerInfo;
+	private ArrayList<Client> localClientList;
 	// connects to server and clientGameInstance instance 
 	
 	public ClientServerConnector(Client client, InetAddress serverAddress) {
@@ -49,7 +54,7 @@ public class ClientServerConnector {
 			outputStream.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
-			System.exit(0);
+			return; // return and do nothing for now
 			// failed connection retry or exit.
 		}
 		
@@ -58,10 +63,12 @@ public class ClientServerConnector {
 
 	public void sendClientOutputPackage(ClientOutputPackage clientOutputPackage) {
 		try {
+			System.out.println("client["+client+"] sent: "+clientOutputPackage);
 			outputStream.writeObject(clientOutputPackage);
 			outputStream.flush();
 		} catch (IOException e) {
 			e.printStackTrace();
+			// retry to send?
 		}
 	}
 	
@@ -78,12 +85,14 @@ public class ClientServerConnector {
 			this.csc = csc;
 		}
 		
+		@SuppressWarnings("unchecked")
 		@Override
 		public void run() {
 			// receive data from server
 			while(!clientSocket.isClosed()) {
 				try {
 					ServerOutputPackage sop = (ServerOutputPackage) inputStream.readObject();
+					System.out.println("client["+client+"] received: "+sop);
 					switch (sop.getCommand()) {
 					case BAN:
 						// ur banned LUL
@@ -94,6 +103,7 @@ public class ClientServerConnector {
 					case GAME_DATA:
 						// send to game
 						if(localGame == null) break;
+						System.out.println(sop);
 						localGame.processServerData((GameData) sop.getData().get(0));
 						break;
 					case KICK:
@@ -107,11 +117,18 @@ public class ClientServerConnector {
 						break;
 					case START_GAME:
 						// create game
-						localGame = GameFactory.createGame(localServerInfo.getGameMode(), null, csc);
+						localGame = GameFactory.createGame(localServerInfo.getGameMode(), null, csc, (GameData) sop.getData().get(0));
+						//send it out to the GUI
+						firePropertyChange(CustomContentPane.LOCAL_GAME, null, localGame);
 						break;
 					case SERVER_INFO:
 						// set local server Info
 						localServerInfo = (ServerInfo) sop.getData().get(0);
+						firePropertyChange(CustomContentPane.LOCAL_SERVER_INFO, null, localServerInfo);
+						break;
+					case CLIENT_LIST:
+						localClientList = (ArrayList<Client>) sop.getData().get(0);
+						firePropertyChange(CustomContentPane.LOCAL_CLIENT_LIST, null, localClientList);
 						break;
 					default:
 						break;
@@ -120,6 +137,7 @@ public class ClientServerConnector {
 					e.printStackTrace();
 				} catch (IOException e) {
 					e.printStackTrace();
+					System.exit(0);
 				}
 			}
 		}
@@ -127,4 +145,13 @@ public class ClientServerConnector {
 		// add methods to send data to client public method wrappers in container class
 		
 	}
+
+	public synchronized ServerInfo getLocalServerInfo() {
+		return localServerInfo;
+	}
+
+	public ArrayList<Client> getLocalClientList() {
+		return localClientList;
+	}
+
 }

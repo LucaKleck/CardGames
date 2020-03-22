@@ -9,9 +9,11 @@ public enum GameDataType {
 	CURRENT_STACK_NUMBER,	// sends current stack number
 	CURRENT_REVERSE,		// sends current reverse state
 	CURRENT_HAS_DRAWN,		// sends current has drawn state
+	CURRENT_NEXT_PLAYER,	// sends current next player
 	PLACED_CARD, 			// sends card, next player, drawCardStackNumber, isReversed
-	REQ_PAIR,				// sends requested <Client, hand> pair
+	PAIR,					// sends requested <Client, hand> pair
 	SYNCH_TO_SERVER,		// sends all important data
+	REMOVE_CARD,			// sends remove card command
 	;
 	
 }

@@ -41,4 +41,10 @@ public class ClientGameAction implements Serializable {
 		return data;
 	}
 	
+	@Override
+	public String toString() {
+		if(data == null) return gat.toString();
+		return gat.toString()+" with payload{"+data.toString()+"}";
+	}
+	
 }

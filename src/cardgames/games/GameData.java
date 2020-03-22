@@ -21,4 +21,10 @@ public class GameData implements Serializable {
 	public ArrayList<Object> getData() {
 		return data;
 	}
+	
+	@Override
+	public String toString() {
+		if(data == null) return gdt.toString();
+		return gdt.toString()+" with payload{"+data.toString()+"}";
+	}
 }
