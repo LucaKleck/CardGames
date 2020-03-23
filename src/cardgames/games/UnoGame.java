@@ -44,6 +44,7 @@ public class UnoGame extends Game {
 	private ArrayList<UnoCard> placedCards;					// server/local placed cards
 	private Client currentPlayer;							// server
 	private UnoCard currentCard;							// server
+	private ArrayList<Pair<Client, Integer>> cardlessPlayers;// Players that ended the game
 	
 	/**
 	 * How many cards does the player need to draw
@@ -95,8 +96,12 @@ public class UnoGame extends Game {
 		setReverse(((Boolean) gd.getData().get(3)).booleanValue());
 		setHasDrawn(((Boolean) gd.getData().get(4)).booleanValue());
 		setDrawCardStackNumber(((Integer) gd.getData().get(5)).intValue());
-		setPlayerHand((Pair<Client, ArrayList<UnoCard>>) gd.getData().get(6));
-		setNextPlayer((Client) gd.getData().get(7));
+		if(clientServerConnector.getClient().getRole().equals(ClientRole.PLAYER)) {
+			setPlayerHand((Pair<Client, ArrayList<UnoCard>>) gd.getData().get(6));
+			setNextPlayer((Client) gd.getData().get(7));
+		} else {
+			setNextPlayer((Client) gd.getData().get(6)); // TODO change order so player hand is last and can be if'ed easier
+		}
 		firePropertyChange(UPDATE, null, null);
 	}
 	
@@ -104,29 +109,54 @@ public class UnoGame extends Game {
 		switch (gat.getGameActionType()) {
 		case DRAW_CARD:
 		{
-			// draws n cards -> send n cards to player
-			ArrayList<UnoCard> cards = new ArrayList<UnoCard>();
-			if(drawCardStackNumber == 0) cards.add(drawCard());
-			for(int i = 0; i < drawCardStackNumber; drawCardStackNumber--) {
-				cards.add(drawCard());
+			{
+				// draws n cards -> send n cards to player
+				ArrayList<UnoCard> cards = new ArrayList<UnoCard>();
+				if(drawCardStackNumber == 0) cards.add(drawCard());
+				for(int i = 0; i < drawCardStackNumber; drawCardStackNumber--) {
+					cards.add(drawCard());
+				}
+				ArrayList<Object> dataContainer = new ArrayList<Object>();
+				ArrayList<Object> gameData = new ArrayList<Object>();
+				gameData.add(cards);
+				getPlayerPair(gat.getOriginClient()).getHand().addAll(cards);
+				dataContainer.add(new GameData(GameDataType.CARDS_DRAWN, gameData));
+				ServerOutputPackage sop1 = new ServerOutputPackage(ServerCommands.GAME_DATA, dataContainer);
+				server.sendServerOutputPackage(sop1, gat.getOriginClient());
+				// no placement after force drawing cards
+				if(currentCard.getCardId() == CardGamesConstants.CARD_DRAW_FOUR || currentCard.getCardId() == CardGamesConstants.CARD_DRAW_TWO) {
+					setHasDrawn(false);
+					currentPlayer = getNextPlayer();
+					sendNextPlayer();
+				} else {
+					if(!canPlaceCard(currentPlayer)) { // draw until you can place
+						setHasDrawn(false);
+					} else {
+						setHasDrawn(true);
+					}
+				}
 			}
-			ArrayList<Object> gdcontainer = new ArrayList<Object>();
-			ArrayList<Object> gd = new ArrayList<Object>();
-			gd.add(cards);
-			getPlayerPair(gat.getOriginClient()).getHand().addAll(cards);
-			gdcontainer.add(new GameData(GameDataType.CARDS_DRAWN, gd));
-			ServerOutputPackage sop1 = new ServerOutputPackage(ServerCommands.GAME_DATA, gdcontainer);
-			server.sendServerOutputPackage(sop1, gat.getOriginClient());
-			
-			// update all clients draw card stack number
-			ArrayList<Object> gameDataContainer = new ArrayList<Object>();
-			ArrayList<Object> gameData = new ArrayList<Object>();
-			gameData.add(Integer.valueOf(drawCardStackNumber));
-			// pack it
-			gameDataContainer.add(new GameData(GameDataType.CURRENT_STACK_NUMBER, gameData));
-			ServerOutputPackage sop = new ServerOutputPackage(ServerCommands.GAME_DATA, gameDataContainer );
-			// send it
-			server.broadcastServerOutputPackage(sop);
+			// update all clients draw card stack number & has drawn
+			{
+				ArrayList<Object> dataContainer = new ArrayList<Object>();
+				ArrayList<Object> gameData = new ArrayList<Object>();
+				gameData.add(Integer.valueOf(drawCardStackNumber));
+				// pack it
+				dataContainer.add(new GameData(GameDataType.CURRENT_STACK_NUMBER, gameData));
+				ServerOutputPackage sop = new ServerOutputPackage(ServerCommands.GAME_DATA, dataContainer );
+				// send it
+				server.broadcastServerOutputPackage(sop);
+			}
+			{
+				ArrayList<Object> dataContainer = new ArrayList<Object>();
+				ArrayList<Object> gameData = new ArrayList<Object>();
+				gameData.add(Boolean.valueOf(hasDrawn));
+				// pack it
+				dataContainer.add(new GameData(GameDataType.CURRENT_HAS_DRAWN, gameData));
+				ServerOutputPackage sop = new ServerOutputPackage(ServerCommands.GAME_DATA, dataContainer );
+				// send it
+				server.broadcastServerOutputPackage(sop);
+			}
 			break;
 		}
 		case PLACE_CARD:
@@ -139,24 +169,32 @@ public class UnoGame extends Game {
 			if(placeCard(card, color)) {										// call server side placement
 				playerpair.getHand().remove(card);
 				// send player the card to remove
-					ArrayList<Object> gdcontainer = new ArrayList<Object>();
-					ArrayList<Object> gd = new ArrayList<Object>();
-					gd.add(gat.getData().get(0));
-					gdcontainer.add(new GameData(GameDataType.REMOVE_CARD, gd));
-					ServerOutputPackage sop1 = new ServerOutputPackage(ServerCommands.GAME_DATA, gdcontainer);
+				{
+					ArrayList<Object> dataContainer = new ArrayList<Object>();
+					ArrayList<Object> gameData = new ArrayList<Object>();
+					gameData.add(gat.getData().get(0));
+					dataContainer.add(new GameData(GameDataType.REMOVE_CARD, gameData));
+					ServerOutputPackage sop1 = new ServerOutputPackage(ServerCommands.GAME_DATA, dataContainer);
 					server.sendServerOutputPackage(sop1, gat.getOriginClient());
+				}
+				if(playerpair.getHand().isEmpty()) {
+					// VI VON ZULUL
+				}
 				// broadcast PLACED_CARD to each client
-					ArrayList<Object> gameDataContainer = new ArrayList<Object>();
+				{
+					ArrayList<Object> dataContainer = new ArrayList<Object>();
 					ArrayList<Object> gameData = new ArrayList<Object>();
 					gameData.add(card);
 					gameData.add(currentPlayer);
 					gameData.add(Integer.valueOf(drawCardStackNumber));
 					gameData.add(Boolean.valueOf(isReverse));
+					gameData.add(Boolean.valueOf(hasDrawn));
 					// pack it
-					gameDataContainer.add(new GameData(GameDataType.PLACED_CARD, gameData));
-					ServerOutputPackage sop = new ServerOutputPackage(ServerCommands.GAME_DATA, gameDataContainer );
+					dataContainer.add(new GameData(GameDataType.PLACED_CARD, gameData));
+					ServerOutputPackage sop = new ServerOutputPackage(ServerCommands.GAME_DATA, dataContainer );
 					// send it
 					server.broadcastServerOutputPackage(sop);
+				}
 			}
 			break;
 		}
@@ -165,18 +203,18 @@ public class UnoGame extends Game {
 			// asks for his own hand
 			for(Pair<Client, ArrayList<UnoCard>> pair : playerList) {
 				if(pair.getClient().equals(gat.getOriginClient())) {
-					ArrayList<Object> data = new ArrayList<Object>();
+					ArrayList<Object> dataContainer = new ArrayList<Object>();
 					ArrayList<Object> gameData = new ArrayList<Object>();
 					gameData.add(pair);
-					data.add(new GameData(GameDataType.PAIR, gameData));
-					server.sendServerOutputPackage(new ServerOutputPackage(ServerCommands.GAME_DATA, data), pair.getClient());
+					dataContainer.add(new GameData(GameDataType.PAIR, gameData));
+					server.sendServerOutputPackage(new ServerOutputPackage(ServerCommands.GAME_DATA, dataContainer), pair.getClient());
 				}
 			}
 			break;
 		}
 		case REQ_SYNCH:
 		{
-			ArrayList<Object> data = new ArrayList<Object>();
+			ArrayList<Object> dataContainer = new ArrayList<Object>();
 			ArrayList<Object> gameData = new ArrayList<Object>();
 
 			gameData.add(currentCard);
@@ -185,10 +223,16 @@ public class UnoGame extends Game {
 			gameData.add(Boolean.valueOf(isReverse));
 			gameData.add(Boolean.valueOf(hasDrawn));
 			gameData.add(Integer.valueOf(drawCardStackNumber));
-			gameData.add(getPlayerPair(gat.getOriginClient()));
+			if(gat.getOriginClient().getRole().equals(ClientRole.PLAYER)) {
+				gameData.add(getPlayerPair(gat.getOriginClient()));
+			}
 			gameData.add(getNextPlayer());
-			data.add(new GameData(GameDataType.SYNCH_TO_SERVER, gameData));
-			server.sendServerOutputPackage(new ServerOutputPackage(ServerCommands.GAME_DATA, data), gat.getOriginClient());
+			if(gat.getOriginClient().getRole().equals(ClientRole.PLAYER)) {
+				dataContainer.add(new GameData(GameDataType.SYNCH_PLAYER_TO_SERVER, gameData));
+			} else {
+				dataContainer.add(new GameData(GameDataType.SYNCH_SPECTATOR_TO_SERVER, gameData));
+			}
+			server.sendServerOutputPackage(new ServerOutputPackage(ServerCommands.GAME_DATA, dataContainer), gat.getOriginClient());
 			break;
 		}
 		case REQ_NEXT_PLAYER: 
@@ -210,8 +254,7 @@ public class UnoGame extends Game {
 	@SuppressWarnings("unchecked")
 	public synchronized void processServerData(GameData gd) {
 		switch (gd.getGdt()) {
-		case SYNCH_TO_SERVER:
-			System.out.println("synch["+getClientServerConnector().getClient()+"]");
+		case SYNCH_PLAYER_TO_SERVER:
 			setCurrentCard((UnoCard) gd.getData().get(0));
 			setPlacedCards((ArrayList<UnoCard>) gd.getData().get(1));
 			setCurrentPlayer((Client) gd.getData().get(2));
@@ -221,10 +264,19 @@ public class UnoGame extends Game {
 			setPlayerHand((Pair<Client, ArrayList<UnoCard>>) gd.getData().get(6));
 			setNextPlayer((Client) gd.getData().get(7));
 			break;
+		case SYNCH_SPECTATOR_TO_SERVER:
+			setCurrentCard((UnoCard) gd.getData().get(0));
+			setPlacedCards((ArrayList<UnoCard>) gd.getData().get(1));
+			setCurrentPlayer((Client) gd.getData().get(2));
+			setReverse(((Boolean) gd.getData().get(3)).booleanValue());
+			setHasDrawn(((Boolean) gd.getData().get(4)).booleanValue());
+			setDrawCardStackNumber(((Integer) gd.getData().get(5)).intValue());
+			setNextPlayer((Client) gd.getData().get(6));
+			break;
 		case CARDS_DRAWN:
 			// cards to be added to client hand
 			playerHand.getHand().addAll((ArrayList<UnoCard>) gd.getData().get(0));
-			// drawCardStackNumber will be broadcasted from server
+			// server will update other players as well
 			break;
 		case CARD_LIST:
 			setPlacedCards((ArrayList<UnoCard>) gd.getData().get(0));
@@ -255,6 +307,7 @@ public class UnoGame extends Game {
 			setCurrentPlayer((Client) gd.getData().get(1));
 			setDrawCardStackNumber(((Integer) gd.getData().get(2)).intValue());
 			setReverse(((Boolean) gd.getData().get(3)).booleanValue());
+			setHasDrawn(((Boolean) gd.getData().get(4)).booleanValue());
 			break;
 		case PAIR:
 			setPlayerHand((Pair<Client, ArrayList<UnoCard>>) gd.getData().get(0));
@@ -357,14 +410,19 @@ public class UnoGame extends Game {
 	 * @param player
 	 * @return canPlaceCard
 	 */
-	@SuppressWarnings("unused")
-	private boolean canPlaceCard(Client player) {
-		for(UnoCard u : getPlayerPair(player).getHand()) {
-			if(isPlacable(u)) return true;
+	public boolean canPlaceCard(Client player) {
+		if(server == null) {
+			for(UnoCard u : getPlayerHand().getHand()) {
+				if(isPlacable(u)) return true;
+			}
+		} else {
+			for(UnoCard u : getPlayerPair(player).getHand()) {
+				if(isPlacable(u)) return true;
+			}
 		}
 		return false;
 	}
-	
+	// TODO FIX IT DAMNIT!
 	public Client getNextPlayer() {
 		if(server == null) {
 			return nextPlayer;
@@ -397,7 +455,7 @@ public class UnoGame extends Game {
 		}
 	}
 	
-	public synchronized void sendNextPlayer() {
+	private synchronized void sendNextPlayer() {
 		ArrayList<Object> data = new ArrayList<Object>();
 		ArrayList<Object> gameData = new ArrayList<Object>();
 		gameData.add(nextPlayer);
@@ -405,9 +463,10 @@ public class UnoGame extends Game {
 		server.broadcastServerOutputPackage(new ServerOutputPackage(ServerCommands.GAME_DATA, data));
 	}
 	
-	public synchronized UnoCard drawCard() {
+	private synchronized UnoCard drawCard() {
 		if(server == null) {
-			return null; // draw card can be called outside of game!
+			// Clients can't interact with cardDeck (server only)
+			return null;
 		} else {
 			if(cardDeck.isEmpty()) {
 				refillDeck();
@@ -417,7 +476,7 @@ public class UnoGame extends Game {
 	}
 	
 	/**
-	 * @return
+	 * @return a 7 card hand
 	 * Server Only
 	 */
 	private ArrayList<UnoCard> drawHand() {
@@ -439,7 +498,9 @@ public class UnoGame extends Game {
 		for(Pair<Client, ArrayList<UnoCard>> pair : playerList) {
 			if(wantedPairClient.equals(pair.getClient())) return pair;
 		}
-		return null;
+		Pair<Client, ArrayList<UnoCard>> newPlayer = new Pair<Client, ArrayList<UnoCard>>(wantedPairClient, drawHand());
+		playerList.add(newPlayer);
+		return newPlayer;
 	}
 	
 	private synchronized UnoCard getCardFromHand(ArrayList<UnoCard> hand, UnoCard card) {
@@ -453,11 +514,11 @@ public class UnoGame extends Game {
 	 */
 	public synchronized void drawCards() {
 		if(server == null) {
-			ArrayList<Object> data = new ArrayList<Object>();
-			ArrayList<Object> gameData = new ArrayList<Object>();
-			data.add(new ClientGameAction(clientServerConnector.getClient(), GameActionType.DRAW_CARD, gameData));
-			ClientOutputPackage cop = new ClientOutputPackage(ClientCommands.GAME_ACTION, data);
-			clientServerConnector.sendClientOutputPackage(cop);
+			if(clientServerConnector.getClient().equals(getCurrentPlayer())) {
+				ArrayList<Object> dataContianer = new ArrayList<Object>();
+				dataContianer.add(new ClientGameAction(clientServerConnector.getClient(), GameActionType.DRAW_CARD, null));
+				clientServerConnector.sendClientOutputPackage(new ClientOutputPackage(ClientCommands.GAME_ACTION, dataContianer));
+			}
 		} else {
 			// server can't draw cards ???? LUL KEKW
 		}
@@ -550,16 +611,41 @@ public class UnoGame extends Game {
 
 	@Override
 	public GameData createSynchData(Client c) {
-		ArrayList<Object> gameData = new ArrayList<Object>();
-
-		gameData.add(currentCard);
-		gameData.add(placedCards);
-		gameData.add(currentPlayer);
-		gameData.add(Boolean.valueOf(isReverse));
-		gameData.add(Boolean.valueOf(hasDrawn));
-		gameData.add(Integer.valueOf(drawCardStackNumber));
-		gameData.add(getPlayerPair(c));
-		gameData.add(getNextPlayer());
-		return new GameData(GameDataType.SYNCH_TO_SERVER, gameData);
+		if(c.getRole().equals(ClientRole.PLAYER)) {
+			ArrayList<Object> gameData = new ArrayList<Object>();
+			
+			gameData.add(currentCard);
+			gameData.add(placedCards);
+			gameData.add(currentPlayer);
+			gameData.add(Boolean.valueOf(isReverse));
+			gameData.add(Boolean.valueOf(hasDrawn));
+			gameData.add(Integer.valueOf(drawCardStackNumber));
+			gameData.add(getPlayerPair(c));
+			gameData.add(getNextPlayer());
+			return new GameData(GameDataType.SYNCH_PLAYER_TO_SERVER, gameData);
+		}
+		if(c.getRole().equals(ClientRole.SPECTATOR)) {
+			ArrayList<Object> gameData = new ArrayList<Object>();
+			
+			gameData.add(currentCard);
+			gameData.add(placedCards);
+			gameData.add(currentPlayer);
+			gameData.add(Boolean.valueOf(isReverse));
+			gameData.add(Boolean.valueOf(hasDrawn));
+			gameData.add(Integer.valueOf(drawCardStackNumber));
+			gameData.add(getNextPlayer());
+			
+			return new GameData(GameDataType.SYNCH_SPECTATOR_TO_SERVER, gameData);
+		}
+		return null;
 	}
+
+	@Override
+	public boolean hasPlayer(Client client) {
+		for(Pair<Client, ArrayList<UnoCard>> pair : playerList) {
+			if(pair.getClient().equals(client)) return true;
+		}
+		return false;
+	}
+	
 }

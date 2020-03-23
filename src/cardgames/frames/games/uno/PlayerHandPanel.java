@@ -14,10 +14,10 @@ public class PlayerHandPanel extends JLayeredPane {
 	public PlayerHandPanel(UnoPane unoPanel) {
 		this.unoPanel = unoPanel;
 		setLayout(new MigLayout("", "[]", "[]"));
-		updatePlayerHand();
+		updatePanel();
 	}
 
-	public synchronized void updatePlayerHand() {
+	public synchronized void updatePanel() {
 		removeAll();
 		ArrayList<UnoCard> playerCards;
 		playerCards = unoPanel.getGame().getPlayerHand().getHand();

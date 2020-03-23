@@ -15,8 +15,12 @@ import javax.swing.JTextPane;
 import javax.swing.ScrollPaneConstants;
 
 import cardgames.client.Client;
+import cardgames.client.ClientCommands;
+import cardgames.client.ClientOutputPackage;
 import cardgames.client.ClientServerConnector;
 import cardgames.frames.games.uno.UnoPane;
+import cardgames.games.ClientGameAction;
+import cardgames.games.GameActionType;
 import cardgames.games.UnoGame;
 import cardgames.server.ServerInfo;
 import net.miginfocom.swing.MigLayout;
@@ -88,13 +92,20 @@ public class Lobby extends CustomContentPane implements PropertyChangeListener {
 		textField.setColumns(10);
 		
 		btnStartGame = new JButton("Start Game");
+		
 		btnStartGame.addActionListener(e -> {
-			if(containerJPanel.getServer() == null) return;
-			containerJPanel.getServer().startGame();
+			if(containerJPanel.getServer() == null) {
+				ArrayList<Object> data = new ArrayList<Object>();
+				data.add(new ClientGameAction(clientConnection.getClient(), GameActionType.REQ_SYNCH, null));
+				clientConnection.sendClientOutputPackage(new ClientOutputPackage(ClientCommands.GAME_ACTION, data ));
+			} else {
+				containerJPanel.getServer().startGame();
+			}
 		});
 		add(btnStartGame, "cell 2 2,aligny top");
 	
 		clientConnection.addPropertyChangeListener(this);
+		this.addPropertyChangeListener(this);
 	}
 
 	@SuppressWarnings("unchecked")

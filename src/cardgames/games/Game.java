@@ -10,4 +10,5 @@ public abstract class Game extends Component {
 	public abstract void processClientGameAction(ClientGameAction gat);
 	public abstract void processServerData(GameData gd);
 	public abstract GameData createSynchData(Client c);
+	public abstract boolean hasPlayer(Client client);
 }

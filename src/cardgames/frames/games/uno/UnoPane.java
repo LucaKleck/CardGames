@@ -5,6 +5,7 @@ import cardgames.frames.CardPane;
 import cardgames.frames.CustomContentPane;
 import cardgames.frames.games.ChatPanel;
 import cardgames.games.UnoGame;
+import cardgames.server.ClientRole;
 import net.miginfocom.swing.MigLayout;
 
 import java.beans.PropertyChangeEvent;
@@ -20,15 +21,18 @@ public class UnoPane extends CustomContentPane implements PropertyChangeListener
 	private ChatPanel chatPanel;
 	private JPanel playerList;
 	private ServerInfoPanel serverInfoPanel;
-	private PlayerHandPanel playerHand;
+	private PlayerHandPanel playerHandPanel;
 	private PlayerControlPanel playerControlPanel;
 	
 	public UnoPane(CardPane containerJPanel, ClientServerConnector clientConnection, UnoGame game) {
 		super(containerJPanel);
-		this.game = game;
-		game.addPropertyChangeListener(this);
-		this.clientConnection = clientConnection;
 		setLayout(new MigLayout("insets 0 0 0 0", "[grow][grow,center][grow]", "[grow][grow,center][grow]"));
+		
+		this.game = game;
+		this.clientConnection = clientConnection;
+		
+		game.addPropertyChangeListener(this);
+		clientConnection.addPropertyChangeListener(this);
 		
 		serverInfoPanel = new ServerInfoPanel(this);
 		add(serverInfoPanel, "cell 2 0,grow");
@@ -42,8 +46,10 @@ public class UnoPane extends CustomContentPane implements PropertyChangeListener
 		chatPanel = new ChatPanel();
 		add(chatPanel, "cell 2 1,grow");
 		
-		playerHand = new PlayerHandPanel(this);
-		add(playerHand, "cell 1 2,grow");
+		if(clientConnection.getClient().getRole().equals(ClientRole.PLAYER)) {
+			playerHandPanel = new PlayerHandPanel(this);
+			add(playerHandPanel, "cell 1 2,grow");
+		}
 		
 		playerControlPanel = new PlayerControlPanel(this);
 		add(playerControlPanel, "cell 2 2,grow");
@@ -58,9 +64,10 @@ public class UnoPane extends CustomContentPane implements PropertyChangeListener
 	}
 	
 	public void updatePanels() {
-		playerHand.updatePlayerHand();
-		placedCardsPanel.updatePlacedCards();
-		serverInfoPanel.updateInfo();
+		playerHandPanel.updatePanel();
+		placedCardsPanel.updatePanel();
+		serverInfoPanel.updatePanel();
+		playerControlPanel.updatePanel();
 	}
 
 	@Override

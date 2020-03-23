@@ -12,29 +12,34 @@ public class ServerInfoPanel extends JPanel {
 	private JLabel lblNextPlayer;
 	private JLabel lblCurrentPlayer;
 	private UnoPane unoPane;
+	private JLabel lblGameMode;
 	
 	public ServerInfoPanel(UnoPane unoPane) {
 		this.unoPane = unoPane;
-		setLayout(new MigLayout("", "[]", "[][][][]"));
+		setLayout(new MigLayout("", "[]", "[][][][][]"));
 		
 		lblServerName = new JLabel("server name not updated");
 		add(lblServerName, "cell 0 0");
 		
+		lblGameMode = new JLabel("game mode not updated");
+		add(lblGameMode, "cell 0 1");
+		
 		lblClientList = new JLabel("play list not updated");
-		lblClientList.setText(unoPane.getClientConnection().getLocalClientList().toString());
-		add(lblClientList, "cell 0 1");
+		add(lblClientList, "cell 0 2");
 		
 		lblCurrentPlayer = new JLabel("Current Player: ?");
-		add(lblCurrentPlayer, "cell 0 2");
+		add(lblCurrentPlayer, "cell 0 3");
 		
 		lblNextPlayer = new JLabel("Next Player: ?");
-		add(lblNextPlayer, "cell 0 3");
-		updateInfo();
+		add(lblNextPlayer, "cell 0 4");
+		updatePanel();
 	}
 
-	public void updateInfo() {
+	public void updatePanel() {
 		if(unoPane.getGame() == null) return;
 		lblServerName.setText(unoPane.getGame().getClientServerConnector().getLocalServerInfo().getServerName());
+		lblGameMode.setText(unoPane.getClientConnection().getLocalServerInfo().getGameMode().toString());
+		lblClientList.setText(unoPane.getClientConnection().getLocalClientList().toString());
 		lblNextPlayer.setText("Next Player: "+unoPane.getGame().getNextPlayer());
 		lblCurrentPlayer.setText("Current Player: "+unoPane.getGame().getCurrentPlayer());
 	}

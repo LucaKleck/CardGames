@@ -14,6 +14,7 @@ import cardgames.constants.CardGamesConstants;
 import cardgames.frames.CustomContentPane;
 import cardgames.games.Game;
 import cardgames.games.GameData;
+import cardgames.games.GameDataType;
 import cardgames.games.GameFactory;
 import cardgames.server.ServerInfo;
 import cardgames.server.ServerOutputPackage;
@@ -63,7 +64,7 @@ public class ClientServerConnector extends Component {
 
 	public void sendClientOutputPackage(ClientOutputPackage clientOutputPackage) {
 		try {
-			System.out.println("client["+client+"] sent: "+clientOutputPackage);
+			System.out.println("["+client+"]client sent: "+clientOutputPackage);
 			outputStream.writeObject(clientOutputPackage);
 			outputStream.flush();
 		} catch (IOException e) {
@@ -92,7 +93,7 @@ public class ClientServerConnector extends Component {
 			while(!clientSocket.isClosed()) {
 				try {
 					ServerOutputPackage sop = (ServerOutputPackage) inputStream.readObject();
-					System.out.println("client["+client+"] received: "+sop);
+					System.out.println("["+client+"]client received: "+sop);
 					switch (sop.getCommand()) {
 					case BAN:
 						// ur banned LUL
@@ -102,8 +103,13 @@ public class ClientServerConnector extends Component {
 						break;
 					case GAME_DATA:
 						// send to game
-						if(localGame == null) break;
-						System.out.println(sop);
+						if(localGame == null) {
+							GameData gData = (GameData) sop.getData().get(0);
+							if(gData.getGdt().equals(GameDataType.SYNCH_PLAYER_TO_SERVER) || gData.getGdt().equals(GameDataType.SYNCH_SPECTATOR_TO_SERVER)) {
+								localGame = GameFactory.createGame(localServerInfo.getGameMode(), null, csc, gData);
+								firePropertyChange(CustomContentPane.LOCAL_GAME, null, localGame);
+							}
+						}
 						localGame.processServerData((GameData) sop.getData().get(0));
 						break;
 					case KICK:

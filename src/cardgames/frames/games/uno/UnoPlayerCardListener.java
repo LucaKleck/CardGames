@@ -25,6 +25,14 @@ public class UnoPlayerCardListener implements MouseListener {
 	@Override
 	public void mouseClicked(MouseEvent e) {
 		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
 		if(localClient.equals(playerHand.getUnoPanel().getGame().getCurrentPlayer())) {
 			selectedColor = -1;
 			if(unoCard.getCardId() == CardGamesConstants.CARD_WILD || unoCard.getCardId() == CardGamesConstants.CARD_DRAW_FOUR) {
@@ -35,15 +43,6 @@ public class UnoPlayerCardListener implements MouseListener {
 			UnoGame g = playerHand.getUnoPanel().getGame();
 			g.placeCard(unoCard, selectedColor);
 		}
-	}
-
-	@Override
-	public void mousePressed(MouseEvent e) {
-	}
-
-	@Override
-	public void mouseReleased(MouseEvent e) {
-		
 	}
 
 	@Override

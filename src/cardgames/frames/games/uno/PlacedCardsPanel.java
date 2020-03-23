@@ -14,10 +14,10 @@ public class PlacedCardsPanel extends JPanel {
 	public PlacedCardsPanel(UnoPane unoPanel) {
 		setLayout(new MigLayout("", "[150px]", "[250px]"));
 		this.unoPanel = unoPanel;
-		updatePlacedCards();
+		updatePanel();
 	}
 
-	public synchronized void updatePlacedCards() {
+	public synchronized void updatePanel() {
 		removeAll();
 		ArrayList<UnoCard> placedCards = unoPanel.getGame().getPlacedCards();
 		UnoCard currenUnoCard = unoPanel.getGame().getCurrentCard();

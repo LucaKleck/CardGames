@@ -71,6 +71,7 @@ public class Server implements Runnable {
 	
 	public boolean startGame() {
 		game = GameFactory.createGame(serverInfo.getGameMode(), this, null,  null);
+		serverInfo.setInGame(true);
 		for(ClientHandler clientHandler : clientHandlers) {
 			ArrayList<Object> data = new ArrayList<Object>();
 			data.add(game.createSynchData(clientHandler.getClient()));
@@ -134,6 +135,10 @@ public class Server implements Runnable {
 				clientHandler.sendServerOutputPackage(serverOutputPackage);
 			}
 		}
+	}
+
+	protected void removeClient(ClientHandler clientHandler) {
+		clientHandlers.remove(clientHandler);
 	}
 	
 }

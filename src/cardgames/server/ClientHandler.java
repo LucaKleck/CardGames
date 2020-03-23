@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import cardgames.client.Client;
 import cardgames.client.ClientOutputPackage;
@@ -19,9 +20,11 @@ public class ClientHandler {
 	
 	private Client client; 	// client will send his info
 	private Server server; 	// host server
+	private ClientHandler clientHandler;
 	
 	
 	public ClientHandler(Socket clientSocket, Server server) {
+		this.clientHandler = this;
 		inputExecutor = Executors.newSingleThreadExecutor();
 		
 		this.clientSocket = clientSocket;
@@ -61,7 +64,7 @@ public class ClientHandler {
 	
 	public synchronized void sendServerOutputPackage(ServerOutputPackage serverOutputPackage) {
 		try {
-			System.out.println("server sent["+client+"]: "+serverOutputPackage);
+			System.out.println("["+client+"]server sent: "+serverOutputPackage);
 			outputStream.writeObject(serverOutputPackage);
 			outputStream.flush();
 		} catch (IOException e) {
@@ -86,7 +89,7 @@ public class ClientHandler {
 			while(!clientSocket.isClosed()) {
 				try {
 					ClientOutputPackage cop = (ClientOutputPackage) inputStream.readObject();
-					System.out.println("server received cop["+client+"]: "+cop);
+					System.out.println("["+client+"]server received: "+cop);
 					switch (cop.getCommand()) {
 					case CHAT:
 						break;
@@ -118,8 +121,14 @@ public class ClientHandler {
 				} catch (ClassNotFoundException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(0);
+					try {
+						clientSocket.shutdownInput();
+						clientSocket.shutdownOutput();
+						clientSocket.close();
+						server.removeClient(clientHandler);
+						inputExecutor.awaitTermination((long)5, TimeUnit.SECONDS);
+					} catch (IOException | InterruptedException e1) {
+					}
 				}
 			}
 		}
