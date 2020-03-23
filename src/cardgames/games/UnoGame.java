@@ -124,16 +124,10 @@ public class UnoGame extends Game {
 				ServerOutputPackage sop1 = new ServerOutputPackage(ServerCommands.GAME_DATA, dataContainer);
 				server.sendServerOutputPackage(sop1, gat.getOriginClient());
 				// no placement after force drawing cards
-				if(currentCard.getCardId() == CardGamesConstants.CARD_DRAW_FOUR || currentCard.getCardId() == CardGamesConstants.CARD_DRAW_TWO) {
+				if(!canPlaceCard(currentPlayer)) { // draw until you can place
 					setHasDrawn(false);
-					currentPlayer = getNextPlayer();
-					sendNextPlayer();
 				} else {
-					if(!canPlaceCard(currentPlayer)) { // draw until you can place
-						setHasDrawn(false);
-					} else {
-						setHasDrawn(true);
-					}
+					setHasDrawn(true);
 				}
 			}
 			// update all clients draw card stack number & has drawn
